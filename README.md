@@ -21,7 +21,7 @@ TrackInfo:
 
 ```
 
-![DonToliver_NoIdea_r-nPqWGG6c.mp3](./src/example.mp3)
+[![DonToliver_NoIdea_r-nPqWGG6c.mp3](https://img.youtube.com/vi/_r-nPqWGG6c/0.jpg)](https://www.youtube.com/watch?v=_r-nPqWGG6c)
 
 ```
 ./data
