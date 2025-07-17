@@ -21,7 +21,8 @@ TrackInfo:
 
 ```
 
-### `./data/`:
+![DonToliver_NoIdea_r-nPqWGG6c.mp3](./src/example.mp3)
+
 ```
 ./data
 ├── mp3s
@@ -31,14 +32,15 @@ TrackInfo:
 └── tracks_full.csv
 ```
 
-### `tracks_full.csv:` (if using `mdl.to_csv(single_file=True)`)
-
+### `tracks_full.csv:`
 |track_id|track_name|artist_id|artist_name|album_id|album_name|release_date|image_url|video_id|audio_path|
 |:------:|:--------:|:-------:|:---------:|:------:|:--------:|:----------:|:-------:|:------:|:--------:|
 |7AzlLxHn24DxjgQX73F9fU|No Idea|4Gso3d4CscCijv0lmajZWs|Don Toliver|7z4GhRfLqfSkqrj5F3Yt2B|Heaven Or Hell|2020-03-13|https://i.scdn.co/image/ab67616d0000b27345190a074bef3e8ce868b60c|_r-nPqWGG6c|./data/mp3s/040/DonToliver_NoIdea_r-nPqWGG6c.mp3|
 
+generated via `mdl.to_csv(single_file=True)`
 
 
-## TODO:
+
+## TODO before July 19:
 - finish downloader code for albums, playlists, and artists
 - incorperate reading a text file with various track, album, playlist, and artist spotify urls
