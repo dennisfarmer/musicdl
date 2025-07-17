@@ -1,38 +1,52 @@
 class Track():
-    def __init__(self, track_id: str, name: str = None, artist_id: str = None, album_id:str=None, popularity:float=None, video_id: str = None, audio_path: str = None, embedding: list[float] = None):
+    def __init__(self, track_id: str, name: str, artist_id: str, artist_name: str, album_id: str, album_name: str, image_url: str, release_date: str, video_id: str = None, audio_path: str = None):
         self.id = track_id
         self.name = name
         self.artist_id = artist_id
+        self.artist_name = artist_name
         self.album_id = album_id
+        self.album_name = album_name
+        self.image_url = image_url
+        self.release_date = release_date
         self.video_id = video_id
         self.audio_path = audio_path
 
     @staticmethod
-    def from_spotify(track_id, sp_track, album=None):
+    def from_spotify(track_id, sp_track):
         # ensure we pass by value (copy the reference to a new object)
         track = sp_track.copy()
+        # ensure we are indexed into the track_details dictionary
         if "track" in track:
             track = track["track"]
         assert track_id == track["id"]
-        if album is None:
-            album_name = track["album"]
-            album_id = track["album"]["id"]
-        else:
-            album_name = album["name"]
-            album_id = album["id"]
         return Track(
             track_id=track_id,
             name=track["name"],
-            artist_name=track["artists"][0]["name"],
             artist_id=track["artists"][0]["id"],
-            album_name=album_name,
-            album_id=album_id,
+            artist_name=track["artists"][0]["name"],
+            album_id = track["album"]["id"],
+            album_name = track["album"]["name"],
+            image_url = track["album"]["images"][0]["url"],
+            release_date = track["album"]["release_date"],
+            video_id=None,
+            audio_path=None
         )
 
     def __getitem__(self, key):
         return getattr(self, key)
     def __str__(self):
-        return f"{self.name} by {self.artist.name} - {self.id}"
+        #return f"{self.name} by {self.artist_name} - {self.id}\n{self.image_url}\n{self.release_date}"
+        return f"""Track Info:
+        id = {self.id}
+        name = {self.name}
+        artist_id = {self.artist_id}
+        artist_name = {self.artist_name}
+        album_id = {self.album_id}
+        album_name = {self.album_name}
+        image_url = {self.image_url}
+        release_date = {self.release_date}
+        video_id = {self.video_id}
+        audio_path = {self.audio_path}"""
 
 
 class Playlist():
@@ -57,7 +71,7 @@ class Playlist():
             raise ValueError("Invalid playlist URL")
 
 class Album():
-    def __init__(self, album_name: str = None, album_id: str = None, artist_name: str = None, artist_id: str = None, album_type: str = None, release_date: str = None, image_url: str = None, sp_album_details: dict = None, tracks: dict[str, Track] = None):
+    def __init__(self, album_name: str = None, album_id: str = None, artist_name: str = None, artist_id: str = None, release_date: str = None, image_url: str = None, sp_album_details: dict = None, tracks: dict[str, Track] = None):
         if sp_album_details is None:
             self.name = album_name
             self.id = album_id

@@ -1,3 +1,8 @@
+__pycache__/
+.DS_Store
+.cache
 data/tmp
 data/mp3s
 .env
+*.csv
+ytdlp/yt-dlp-linux

@@ -1,7 +1,8 @@
 import sqlite3
+import pandas as pd
 from sqlite3 import Connection, Cursor
 from .env import musicdb, audio_storage
-from . import Track, Playlist, User
+from . import Track, Playlist, Album, Artist
 
 def lookup_video_id(track_id: str, cursor):
     video_id = cursor.execute('''
@@ -45,56 +46,52 @@ def lookup_track(track_id: str, cursor: Cursor) -> Track | None:
         return track
     return None
 
-
-
-def write_album_to_db(album_id: str, album_name: str, artist_id: str, artist_name: str, artist_genres: list[str], cursor: Cursor):
-    cursor.execute('''
-    INSERT OR IGNORE INTO albums (id, name, artist_id, artist_name)
-    VALUES (?, ?, ?, ?)
-    ''', (album_id, album_name, artist_id, artist_name))
+def write_artist_to_db(artist: Artist, cursor: Cursor):
     cursor.execute('''
     INSERT OR IGNORE INTO artists (id, name)
     VALUES (?, ?)
-    ''', (artist_id, artist_name))
-    for genre in artist_genres:
-        cursor.execute('''
-        INSERT OR IGNORE INTO artist_genres (artist_id, genre)
-        VALUES (?, ?)
-        ''', (artist_id, genre))
+    ''', (artist.id, artist.name))
+
+def write_album_to_db(album: Album, cursor: Cursor):
+    cursor.execute('''
+    INSERT OR IGNORE INTO albums (id, name, artist_id, release_date, image_url)
+    VALUES (?, ?, ?, ?, ?)
+    ''', (album.id, album.name, album.artist_id, album.release_date, album.image_url))
 
 def write_track_to_db(track: Track, cursor: Cursor):
-    if (track.id is not None) and (track.name is not None) and (track.artist is not None) and (track.album_name is not None) and (track.album_id is not None) and (track.popularity is not None):
-        cursor.execute('''
-        INSERT OR IGNORE INTO tracks (id, name, album_id, artist, popularity)
-        VALUES (?, ?, ?, ?, ?)
-        ''', (track.id, track.name, track.album_id, track.artist, track.popularity))
-        cursor.execute('''
-        INSERT OR IGNORE INTO albums (id, name, artist_id, artist_name)
-        VALUES (?, ?, ?, ?)
-        ''', (track.album_id, track.album_name, None, track.artist))
-    if (track.id is not None) and (track.video_id is not None) and (track.embedding is not None):
-        # note: audio_path will be None if not running locally
-        # this should be UPDATE OR IGNORE when running locally
-        cursor.execute('''
-        INSERT OR IGNORE INTO audio_files (track_id, video_id, audio_path)
-        VALUES (?, ?, ?)
-        ''', (track.id, track.video_id, track.audio_path))
-        write_embedding_to_db(track.video_id, track.embedding, cursor)
-
-def write_playlist_to_db(playlist: Playlist, cursor: Cursor):
     cursor.execute('''
-    INSERT OR IGNORE INTO playlists (id, name, description, owner_id, owner_name, total_tracks)
-    VALUES (?, ?, ?, ?, ?, ?)
-    ''', (playlist.id, playlist.name, playlist.description, playlist.owner_id, playlist.owner_name, playlist.total_tracks))
+    INSERT OR IGNORE INTO tracks (id, name, album_id, artist_id)
+    VALUES (?, ?, ?, ?)
+    ''', (track.id, track.name, track.album_id, track.artist_id))
+    # below code is placeholder
+    write_album_to_db(Album(track.album_id, track.album_name, track.artist_name, track.artist_id, track.release_date, track.image_url), cursor)
+    write_artist_to_db(Artist(track.artist_name, track.artist_id), cursor)
+    # write_audio_to_db(...)
 
-    for track_id, track in playlist.tracks.items():
-        write_track_to_db(track, cursor)
+    #cursor.execute('''
+    #INSERT OR IGNORE INTO albums (id, name, artist_id, artist_name)
+    #VALUES (?, ?, ?, ?)
+    #''', (track.album_id, track.album_name, None, track.artist))
 
-        cursor.execute('''
-        INSERT OR IGNORE INTO playlist_tracks (playlist_id, track_id)
-        VALUES (?, ?)
-        ''', (playlist.id, track_id))
-        cursor.commit()
+    #cursor.execute('''
+    #INSERT OR IGNORE INTO audio_files (track_id, video_id, audio_path)
+    #VALUES (?, ?, ?)
+    #''', (track.id, track.video_id, track.audio_path))
+
+#def write_playlist_to_db(playlist: Playlist, cursor: Cursor):
+    #cursor.execute('''
+    #INSERT OR IGNORE INTO playlists (id, name, description, owner_id, owner_name, total_tracks)
+    #VALUES (?, ?, ?, ?, ?, ?)
+    #''', (playlist.id, playlist.name, playlist.owner_id, playlist.owner_name, playlist.total_tracks))
+
+    #for track_id, track in playlist.tracks.items():
+        #write_track_to_db(track, cursor)
+
+        #cursor.execute('''
+        #INSERT OR IGNORE INTO playlist_tracks (playlist_id, track_id)
+        #VALUES (?, ?)
+        #''', (playlist.id, track_id))
+        #cursor.commit()
 
 def write_audio_to_db(track: Track, cursor: Cursor):
     if track.audio_path is None:
@@ -108,16 +105,39 @@ def write_audio_to_db(track: Track, cursor: Cursor):
     audio_path = excluded.audio_path;
     ''', (track.id, track.video_id, track.audio_path))
 
-def connect_to_database(musicdb) -> tuple[Connection, Cursor]:
+def connect_to_database(musicdb=musicdb) -> tuple[Connection, Cursor]:
     conn = sqlite3.connect(musicdb)
     cursor = conn.cursor()
     return conn, cursor
 
 def create_tables():
     conn, cursor = connect_to_database()
-    with open('./create_tables.sql', 'r') as sql_file:
+    with open('./src/create_tables.sql', 'r') as sql_file:
         sql_script = sql_file.read()
         cursor.executescript(sql_script)
 
     conn.commit()
     conn.close()
+
+def database_to_csv(output="./db.csv"):
+    conn, cursor = connect_to_database()
+    query = """
+    SELECT
+        t.id AS track_id,
+        t.name AS track_name,
+        t.artist_id,
+        ar.name AS artist_name,
+        t.album_id,
+        al.name AS album_name,
+        al.release_date,
+        al.image_url,
+        af.video_id,
+        af.audio_path
+    FROM tracks t
+    LEFT JOIN artists ar ON t.artist_id = ar.id
+    LEFT JOIN albums al ON t.album_id = al.id
+    LEFT JOIN audio_files af ON t.id = af.track_id
+    """
+
+    df = pd.read_sql_query(query, conn)
+    df.to_csv(output, index=False)

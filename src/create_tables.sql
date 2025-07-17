@@ -7,9 +7,8 @@ CREATE TABLE IF NOT EXISTS albums (
     id TEXT PRIMARY KEY,
     name TEXT,
     artist_id TEXT,
-    artist_name TEXT,
     release_date TEXT,
-    image_url TEXT
+    image_url TEXT,
     FOREIGN KEY (artist_id) REFERENCES artists(id)
 );
 
