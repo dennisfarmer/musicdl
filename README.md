@@ -7,11 +7,7 @@ pip install -r requirements.txt
 
 ```bash
 python ./music_dl.py "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00"
-```
-
-### Results
-```
-Track Info:
+TrackInfo:
         id = 7AzlLxHn24DxjgQX73F9fU
         name = No Idea
         artist_id = 4Gso3d4CscCijv0lmajZWs
