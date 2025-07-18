@@ -1,4 +1,4 @@
-# Package Installation:
+# Python Package Installation:
 ```bash
 git clone https://github.com/dennisfarmer/musicdl.git
 cd musicdl
@@ -10,34 +10,7 @@ export SPOTIPY_CLIENT_ID="your client id here"
 export SPOTIPY_CLIENT_SECRET="your client secret here"
 ```
 
-# Command line example:
-```bash
-musicdl -u "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00"
-
-# alternative: provide a file containing many urls
-echo "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU" > tracks.txt
-musicdl -f tracks.txt
-
-# Track - No Idea by Don Toliver (2020-03-13) - 7AzlLxHn24DxjgQX73F9fU
-        # artist_id = 4Gso3d4CscCijv0lmajZWs
-        # album_id = 7z4GhRfLqfSkqrj5F3Yt2B
-        # album_name = Heaven Or Hell
-        # image_url = https://i.scdn.co/image/ab67616d0000b27345190a074bef3e8ce868b60c
-        # release_date = 2020-03-13
-        # video_id = _r-nPqWGG6c
-        # audio_path = ./data/mp3s/10/DonToliver_NoIdea_r-nPqWGG6c.mp3
-
-tree ./data
-#    ├── mp3s
-#    │   └── 10
-#    │       └── DonToliver_NoIdea_r-nPqWGG6c.mp3
-#    ├── music.db
-#    └── tracks.csv
-```
-
-[![DonToliver_NoIdea_r-nPqWGG6c.mp3](https://img.youtube.com/vi/_r-nPqWGG6c/0.jpg)](https://www.youtube.com/watch?v=_r-nPqWGG6c)
-
-# Overview
+# Overview of using `musicdl`
 
 1. Both `musicdl -u [urls]` and `musicdl -f [file_of_urls]` update `./data/music.db` with new mp3s and metadata
 
@@ -69,7 +42,34 @@ type(artist)
 #       each referencing a downloaded mp3 file
 ```
 
----
+# Command Line Example:
+```bash
+musicdl -u "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00"
+
+# alternative: provide a file containing many urls
+echo "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU" > tracks.txt
+musicdl -f tracks.txt
+
+# Track - No Idea by Don Toliver (2020-03-13) - 7AzlLxHn24DxjgQX73F9fU
+        # artist_id = 4Gso3d4CscCijv0lmajZWs
+        # album_id = 7z4GhRfLqfSkqrj5F3Yt2B
+        # album_name = Heaven Or Hell
+        # image_url = https://i.scdn.co/image/ab67616d0000b27345190a074bef3e8ce868b60c
+        # release_date = 2020-03-13
+        # video_id = _r-nPqWGG6c
+        # audio_path = ./data/mp3s/10/DonToliver_NoIdea_r-nPqWGG6c.mp3
+
+tree ./data
+#    ├── mp3s
+#    │   └── 10
+#    │       └── DonToliver_NoIdea_r-nPqWGG6c.mp3
+#    ├── music.db
+#    └── tracks.csv
+```
+
+[![DonToliver_NoIdea_r-nPqWGG6c.mp3](https://img.youtube.com/vi/_r-nPqWGG6c/0.jpg)](https://www.youtube.com/watch?v=_r-nPqWGG6c)
+
+# Help Page (`musicdl --help`)
 
 ```
 usage: musicdl [-h] [-u [URLS ...]] [-f [FILE]] [--export] [--uninstall]
