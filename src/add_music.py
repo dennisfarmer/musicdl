@@ -7,7 +7,7 @@ import re
 from .env import *
 from copy import deepcopy as copy
 #from .db import connect_to_database, write_track_to_db
-from . import Track, Playlist, Album, Artist
+from . import Track, Playlist, Album, Artist, TrackContainer
 
 
 class SpotifyInterface:
@@ -122,14 +122,32 @@ class YoutubeInterface:
     def __init__(self):
         pass
 
-    def add_audio(self, track: Track, inplace=True, force_replace_existing_download=False) -> None|Track:
+    def add_audio(self, tc: TrackContainer, inplace=True, force_replace_existing_download=False) -> None|Track:
+        """
+        adds audio mp3(s) to a TrackContainer
+        """
+        assert isinstance(tc, TrackContainer)
+        if isinstance(tc, Track):
+            return self._add_audio_to_track(tc, inplace, force_replace_existing_download)
+        if not inplace:
+            tc = copy(tc)
+        if isinstance(tc, Album) or isinstance(tc, Playlist):
+            for track_id, track in tc.tracks.items():
+                tc.tracks[track_id] = self._add_audio_to_track(track, False, force_replace_existing_download)
+        elif isinstance(tc, Artist):
+            for album_id, album in tc.albums.items():
+                tc.albums[album_id] = self.add_audio(album, False, force_replace_existing_download)
+        if not inplace:
+            return tc
+
+    def _add_audio_to_track(self, track: Track, inplace=True, force=False) -> None|Track:
         """
         adds audio mp3 to track (video_id and audio_path)
         """
         if not inplace:
             track = copy(track)
         video_id = self._search(track)
-        audio_path = self._download(track, video_id, force=force_replace_existing_download)
+        audio_path = self._download(track, video_id, force=force)
         track.video_id = video_id
         track.audio_path = audio_path
         if not inplace:

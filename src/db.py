@@ -2,7 +2,7 @@ import sqlite3
 import pandas as pd
 from sqlite3 import Connection, Cursor
 from .env import music_db
-from . import Track, Playlist, Album, Artist
+from . import Track, Playlist, Album, Artist, TrackContainer
 import os
 
 class MusicDB:
@@ -41,18 +41,15 @@ class MusicDB:
         for track in c.tracks.values():
             self._insert_track(track)
 
-    def add_track(self, track: Track):
-        self._insert_track(track)
-
-    def add_album(self, album: Album):
-        self._insert_collection(album)
-
-    def add_playlist(self, playlist: Playlist):
-        self._insert_collection(playlist)
-
-    def add_artist(self, artist: Artist):
-        for album in artist.albums.values():
-            self._insert_collection(album)
+    def add(self, tc: TrackContainer):
+        assert isinstance(tc, TrackContainer)
+        if isinstance(tc, Track):
+            self._insert_track(tc)
+        elif isinstance(tc, Album) or isinstance(tc, Playlist):
+            self._insert_collection(tc)
+        elif isinstance(tc, Artist):
+            for album in tc.albums.values():
+                self._insert_collection(album)
 
     def connect_to_database(self, musicdb=None) -> tuple[Connection, Cursor]:
         if musicdb is not None:

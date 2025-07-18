@@ -1,4 +1,17 @@
-class Track():
+class TrackContainer():
+    """
+    A Track, Album, Playlist, or Artist
+    """
+    def __init__(self):
+        pass
+    @staticmethod
+    def from_spotify():
+        pass
+    def __str__():
+        return ""
+
+
+class Track(TrackContainer):
     def __init__(self, track_id: str, name: str, artist_id: str, artist_name: str, album_id: str, album_name: str, image_url: str, release_date: str, video_id: str = None, audio_path: str = None):
         self.id = track_id
         self.name = name
@@ -30,10 +43,10 @@ class Track():
             audio_path=None
         )
 
-    def __getitem__(self, key):
-        return getattr(self, key)
+    #def __getitem__(self, key):
+        #return getattr(self, key)
+
     def __str__(self):
-        #return f"{self.name} by {self.artist_name} - {self.id}\n{self.image_url}\n{self.release_date}"
         return f"""Track Info:
         id = {self.id}
         name = {self.name}
@@ -46,7 +59,7 @@ class Track():
         video_id = {self.video_id}
         audio_path = {self.audio_path}"""
 
-class Album():
+class Album(TrackContainer):
     def __init__(self, album_name: str = None, album_id: str = None, artist_name: str = None, artist_id: str = None, release_date: str = None, image_url: str = None, tracks: dict[str, Track] = None):
         self.name = album_name
         self.id = album_id
@@ -80,7 +93,7 @@ class Album():
             s += f"\n\t\t{i}. {track.name}"
         return s
 
-class Playlist():
+class Playlist(TrackContainer):
     def __init__(self, playlist_id: str, tracks: dict[str, Track]):
         self.id = playlist_id
         self.tracks = tracks
@@ -105,7 +118,7 @@ class Playlist():
             s += f"\n\t\t{i}. {track.name}"
         return s
 
-class Artist():
+class Artist(TrackContainer):
     def __init__(self, artist_name: str = None, artist_id: str = None):
         self.name = artist_name
         self.id = artist_id

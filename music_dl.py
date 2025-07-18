@@ -20,48 +20,22 @@ class MusicDownloader:
         self.idx = 0 if self.urls is not None else None
 
     def download_from_url(self, url) -> Track|Album|Playlist|Artist:
-        _id, id_type = self.parse_url(url)
-        if id_type == "track":
-            return self.download_track(_id)
-        elif id_type == "album":
-            return self.download_album(_id)
-        elif id_type == "playlist":
-            return self.download_playlist(_id)
-        elif id_type == "artist":
-            return self.download_artist(_id)
-
-    def download_track(self, track_id) -> Track|None:
+        tc = None
+        tc_id, id_type = self.spi.parse_url(url)
         try:
-            track = self.spi.retrieve_track(track_id)
-            self.yti.add_audio(track)
-            self.db.add_track(track)
-            return track
+            if id_type == "track":
+                tc = self.spi.retrieve_track(tc_id)
+            elif id_type == "album":
+                tc = self.spi.retrieve_album(tc_id)
+            elif id_type == "playlist":
+                tc = self.spi.retrieve_playlist(tc_id)
+            elif id_type == "artist":
+                tc = self.spi.retrieve_artist(tc_id)
+            self.yti.add_audio(tc)
+            self.db.add(tc)
+            return tc
         except:
             return None
-
-    def download_album(self, album_id) -> Album|None:
-        try:
-            album = Album()
-            return album
-        except:
-            return None
-
-    def download_playlist(self, playlist_id) -> Playlist|None:
-        try:
-            playlist = Playlist()
-            return playlist
-        except:
-            return None
-
-    def download_artist(self, artist_id) -> Artist|None:
-        try:
-            artist = Artist()
-            return artist
-        except:
-            return None
-
-    def parse_url(self, url):
-        return self.spi.parse_url(url)
 
     def to_csv(self, output_directory="./data", single_file=True):
         self.db.to_csv(output_directory, single_file)
