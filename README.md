@@ -1,4 +1,4 @@
-# Setup:
+# Package Installation:
 ```bash
 git clone https://github.com/dennisfarmer/musicdl.git
 cd musicdl
@@ -10,7 +10,7 @@ export SPOTIPY_CLIENT_ID="your client id here"
 export SPOTIPY_CLIENT_SECRET="your client secret here"
 ```
 
-# Example:
+# Command line example:
 ```bash
 musicdl -u "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00"
 
@@ -39,15 +39,35 @@ tree ./data
 
 # Overview
 
-1: `musicdl -u [urls]` and `musicdl -f [file_of_urls]` update `./data/music.db` with track info
+1. Both `musicdl -u [urls]` and `musicdl -f [file_of_urls]` update `./data/music.db` with new mp3s and metadata
 
 ![ER Diagram](er_diagram.png)
 
-2: `musicdl --export` saves all tracks in database to CSV for further processing
+2. `musicdl --export` saves all tracks in database to `./data/tracks.csv` for further processing
 
 |track_id|track_name|artist_id|artist_name|album_id|album_name|release_date|image_url|video_id|audio_path|
 |:------:|:--------:|:-------:|:---------:|:------:|:--------:|:----------:|:-------:|:------:|:--------:|
 |7AzlLxHn24DxjgQX73F9fU|No Idea|4Gso3d4CscCijv0lmajZWs|Don Toliver|7z4GhRfLqfSkqrj5F3Yt2B|Heaven Or Hell|2020-03-13|https://i.scdn.co/image/ab67616d0000b27345190a074bef3e8ce868b60c|_r-nPqWGG6c|./data/mp3s/10/DonToliver_NoIdea_r-nPqWGG6c.mp3|
+
+3. `musicdl` is usable as both a command line script, as well as a python package
+```bash
+source .venv/bin/activate
+which musicdl
+# /home/username/musicdl/.venv/bin/musicdl
+```
+```python
+#!/usr/bin/env python
+
+from musicdl.cli import MusicDownloader
+mdl = MusicDownloader()
+artist = mdl.from_url("https://open.spotify.com/artist/4Gso3d4CscCijv0lmajZWs")
+
+type(artist)  
+# musicdl.Artist object, 
+#   containing a dict[album_id, musicdl.Album], 
+#     each containing a dict[track_id, Tracks]
+#       each referencing a downloaded mp3 file
+```
 
 ---
 
