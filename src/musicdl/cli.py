@@ -9,8 +9,7 @@ class MusicDownloader:
     """
     ```
     mdl = MusicDownloader()
-    track_url = "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00"
-    "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00"
+    track_url = "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU"
     track = mdl.from_url(track_url)
     ```
     """
@@ -68,8 +67,8 @@ def read_input():
                             "note: be sure to surround each url with double quotes",
                             "",
                             "musicdl -u \\",
-                                '  "https://open.spotify.com/album/2YuS718NZa9vTJk9eoyD9B?si=a6BbX_G2TPKyrTnXniafuQ" \\',
-                                '  "https://open.spotify.com/playlist/5E9bcB7cxoDOuT6zHcN2zB?si=b43d397f80c34746"',
+                                '  "https://open.spotify.com/album/2YuS718NZa9vTJk9eoyD9B" \\',
+                                '  "https://open.spotify.com/playlist/5E9bcB7cxoDOuT6zHcN2zB"',
                                 "", 
                                 hline
                         ]))
@@ -78,8 +77,8 @@ def read_input():
                             "download mp3s using a text file containing Spotify urls",
                             "",
                             "cat << EOF > example.txt",
-                            '"https://open.spotify.com/artist/4A8byZgEqs8YRqUQ2HMmhA?si=771plXN7SqeYgfBEvCq4kw"',
-                            '"https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00"',
+                            '"https://open.spotify.com/artist/4A8byZgEqs8YRqUQ2HMmhA"',
+                            '"https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU"',
                             "EOF", 
                             "", 
                             "musicdl -f example.txt",
