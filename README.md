@@ -1,3 +1,5 @@
+# MDL
+
 ```bash
 python -m venv .shazam_venv
 source .shazam_venv/bin/activate
@@ -6,9 +8,15 @@ pip install -r requirements.txt
 ```
 
 ```bash
-# specify urls via command line arguments, or inside of a textfile (both options support multiple urls)
-python ./music_dl.py -u "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00"
-echo "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00" > example.txt && python ./music_dl.py -f example.txt
+# specify urls via command line arguments: 
+python ./mdl.py -u "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00"
+# or inside of a text file:
+echo "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00" > example.txt
+python ./mdl.py -f example.txt
+
+# both options support multiple urls
+```
+```
 Track - No Idea by Don Toliver (2020-03-13) - 7AzlLxHn24DxjgQX73F9fU
         artist_id = 4Gso3d4CscCijv0lmajZWs
         album_id = 7z4GhRfLqfSkqrj5F3Yt2B
