@@ -3,7 +3,9 @@
 git clone https://github.com/dennisfarmer/musicdl.git
 python3 -m venv .venv && source .venv/bin/activate
 pip3 install -e ./musicdl
+```
 
+```bash
 export SPOTIPY_CLIENT_ID="your client id here"
 export SPOTIPY_CLIENT_SECRET="your client secret here"
 # alternative: create an .env file (see .env_example)

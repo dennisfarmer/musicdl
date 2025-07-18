@@ -157,10 +157,15 @@ class YoutubeInterface:
         binary_path = os.path.join(self.cache_dir, binary)
         if not os.path.exists(binary_path):
             print(f"Downloading {binary} to {binary_path}...")
-            urllib.request.urlretrieve(
-                f"https://github.com/yt-dlp/yt-dlp/releases/latest/download/{binary}",
-                binary_path
-            )
+            try:
+                urllib.request.urlretrieve(
+                    f"https://github.com/yt-dlp/yt-dlp/releases/latest/download/{binary}",
+                    binary_path
+                )
+            except urllib.error.URLError as e:
+                print(str(e))
+                print("Check to see if you have a reliable internet connection")
+                exit(1)
             os.chmod(binary_path, 0o755)
         self.yt_dlp = os.path.abspath(binary_path)
 
