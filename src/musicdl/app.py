@@ -191,6 +191,7 @@ class YoutubeInterface:
                 print("[Errno -3] Temporary failure in name resolution")
                 print("Check to see if you have a reliable internet connection")
                 exit(1)
+            print("✅ download successful")
             os.chmod(binary_path, 0o755)
         self.yt_dlp = os.path.abspath(binary_path)
 
