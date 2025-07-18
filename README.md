@@ -12,11 +12,11 @@ export SPOTIPY_CLIENT_SECRET="your client secret here"
 
 # Overview:
 
-1. Use `musicdl -u / musicdl -f` to update database with new mp3s and metadata
+Use `musicdl -u / musicdl -f` to update database with new mp3s and metadata
 
 ![ER Diagram](er_diagram.png)
 
-2. Use `musicdl --export` to save all tracks to CSV for further processing
+Use `musicdl --export` to save all tracks to CSV for further processing
 
 |track_id|track_name|artist_id|artist_name|album_id|album_name|release_date|image_url|video_id|audio_path|
 |:------:|:--------:|:-------:|:---------:|:------:|:--------:|:----------:|:-------:|:------:|:--------:|
