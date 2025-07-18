@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "musicdl"
+version = "2025.7"
+description = "download tracks, albums, playlists, and artist discographies"
+license = {file = "LICENSE"}
+readme = "README.md"
+
+dependencies = [ 
+    "pandas>=2.3.1",
+    "python-dotenv>=1.1.1",
+    "requests>=2.32.4",
+    "dotenv>=0.9.9",
+    "spotipy>=2.25.1",
+    "urllib3>=2.5.0",
+    "platformdirs"
+]
+
+authors = [
+    {name = "Dennis Farmer", email = "dennisfj@umich.edu"},
+    {name = "Evan Teal", email = "evanteal@umich.edu"}
+]
+
+[project.scripts]
+musicdl = "musicdl.cli:main"
