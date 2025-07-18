@@ -10,26 +10,29 @@ export SPOTIPY_CLIENT_ID="your client id here"
 export SPOTIPY_CLIENT_SECRET="your client secret here"
 ```
 
-# Overview of using `musicdl`
+# Overview:
 
-1. Both `musicdl -u [urls]` and `musicdl -f [file_of_urls]` update `./data/music.db` with new mp3s and metadata
+1. Use `musicdl -u / musicdl -f` to update database with new mp3s and metadata
 
 ![ER Diagram](er_diagram.png)
 
-2. `musicdl --export` saves all tracks in database to `./data/tracks.csv` for further processing
+2. Use `musicdl --export` to save all tracks to CSV for further processing
 
 |track_id|track_name|artist_id|artist_name|album_id|album_name|release_date|image_url|video_id|audio_path|
 |:------:|:--------:|:-------:|:---------:|:------:|:--------:|:----------:|:-------:|:------:|:--------:|
 |7AzlLxHn24DxjgQX73F9fU|No Idea|4Gso3d4CscCijv0lmajZWs|Don Toliver|7z4GhRfLqfSkqrj5F3Yt2B|Heaven Or Hell|2020-03-13|https://i.scdn.co/image/ab67616d0000b27345190a074bef3e8ce868b60c|_r-nPqWGG6c|./data/mp3s/10/DonToliver_NoIdea_r-nPqWGG6c.mp3|
 
-3. `musicdl` is usable as both a command line script, as well as a python package
+`musicdl` is usable as both a command line script,
 ```bash
 source .venv/bin/activate
 which musicdl
 # /home/username/musicdl/.venv/bin/musicdl
 ```
+as well as a Python package:
 ```python
-#!/usr/bin/env python
+# python3 -m venv .venv && source .venv/bin/activate
+# git clone https://github.com/dennisfarmer/musicdl.git
+# pip install -e ./musicdl
 
 from musicdl.cli import MusicDownloader
 mdl = MusicDownloader()
