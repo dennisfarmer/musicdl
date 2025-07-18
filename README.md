@@ -46,7 +46,7 @@ artist = mdl.from_url("https://open.spotify.com/artist/4Gso3d4CscCijv0lmajZWs")
 type(artist)  
 # musicdl.Artist object, 
 #   containing a dict[album_id, musicdl.Album], 
-#     each containing a dict[track_id, Tracks]
+#     each containing a dict[track_id, musicdl.Track]
 #       each referencing a downloaded mp3 file
 ```
 
