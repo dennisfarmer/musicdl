@@ -78,6 +78,8 @@ Download music audio from Youtube, using Spotify urls to obtain track info
 Supports tracks, albums, playlists, and artists
 
 options:
+---------------------------------------------------------
+
   -h, --help     show this help message and exit
                  
 ---------------------------------------------------------
