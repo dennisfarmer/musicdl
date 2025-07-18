@@ -28,7 +28,7 @@ class SpotifyInterface:
             )
 
 
-    def parse_url(self, url) -> tuple[str, str]|tuple[None, None]:
+    def parse_url(self, url) -> tuple[str, str]:
         """
         reads in a spotify url and returns the id and the url_type (track, album, playlist, or artist)
         ```
@@ -36,17 +36,17 @@ class SpotifyInterface:
         f"https://open.spotify.com/album/{id}?si="    -> (id, "album")
         f"https://open.spotify.com/playlist/{id}?si=" -> (id, "playlist")
         f"https://open.spotify.com/artist/{id}?si="   -> (id, "artist")
-        f"https://www.wikipedia.org/"                 -> (None, None)
         ```
         """
 
         for url_type in ["track", "album", "playlist", "artist"]:
             if url_type in url:
-                _id = url.split(f"/{url_type}/")[1]
-                if "?" in _id:
-                    _id = _id.split("?")[0]
-                return _id, url_type
-        return None
+                match = re.search(f"{url_type}/([a-zA-Z0-9]+)", url)
+                if match:
+                    return match.group(1), url_type
+                else:
+                    raise ValueError(f"Invalid URL: {url}")
+        raise ValueError(f"Invalid URL: {url}")
 
     def retrieve_track(self, track_id: str) -> Track:
         """
@@ -60,11 +60,13 @@ class SpotifyInterface:
         retrieve all tracks in an album
         """
         sp_album = self._sp.album(album_id)
-        return Album(sp_album_details=sp_album)
+        return Album.from_spotify(album_id, sp_album_details=sp_album)
 
     def retrieve_artist(self, artist_id: str) -> Artist:
         """
-        retrieve all tracks by an artist
+        retrieve all albums by an artist (=> all tracks)
+        
+        singles are considered albums
         """
         sp_artist = self._sp.artist(artist_id)
         artist = Artist(sp_artist["name"], sp_artist["id"])
@@ -87,7 +89,7 @@ class SpotifyInterface:
         retrieve all tracks in a playlist
         """
         sp_playlist_tracks = self._sp.playlist_tracks(playlist_id)
-        return Playlist(playlist_id, sp_playlist_tracks)
+        return Playlist.from_spotify(playlist_id, sp_playlist_tracks)
 
 class YoutubeSearchError(requests.exceptions.ConnectionError):
     """Exception raised when a YouTube search fails to return a valid video ID."""

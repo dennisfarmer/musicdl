@@ -1,7 +1,7 @@
 import sqlite3
 import pandas as pd
 from sqlite3 import Connection, Cursor
-from .env import music_db, audio_storage
+from .env import music_db
 from . import Track, Playlist, Album, Artist
 import os
 
@@ -37,32 +37,22 @@ class MusicDB:
         audio_path = excluded.audio_path;
         ''', (track.id, track.video_id, track.audio_path))
 
-    #def _insert_artist(self, artist: Artist):
-        #self.cursor.execute('''
-        #INSERT OR IGNORE INTO artists (id, name)
-        #VALUES (?, ?)
-        #''', (artist.id, artist.name))
-
-    #def _insert_album(self, album: Album):
-        #self.cursor.execute('''
-        #INSERT OR IGNORE INTO albums (id, name, artist_id, release_date, image_url)
-        #VALUES (?, ?, ?, ?, ?)
-        #''', (album.id, album.name, album.artist_id, album.release_date, album.image_url))
-
-    #def _insert_audio(self, track: Track):
-        ##if track.audio_path is None:
-            ##print(f"track {track.id} has no video_id")
-        #self.cursor.execute('''
-        #INSERT INTO audio_files (track_id, video_id, audio_path)
-        #VALUES (?, ?, ?)
-        #ON CONFLICT(track_id) DO UPDATE SET
-        #track_id = excluded.track_id,
-        #video_id = excluded.video_id,
-        #audio_path = excluded.audio_path;
-        #''', (track.id, track.video_id, track.audio_path))
+    def _insert_collection(self, c: Album|Playlist):
+        for track in c.tracks.values():
+            self._insert_track(track)
 
     def add_track(self, track: Track):
         self._insert_track(track)
+
+    def add_album(self, album: Album):
+        self._insert_collection(album)
+
+    def add_playlist(self, playlist: Playlist):
+        self._insert_collection(playlist)
+
+    def add_artist(self, artist: Artist):
+        for album in artist.albums.values():
+            self._insert_collection(album)
 
     def connect_to_database(self, musicdb=None) -> tuple[Connection, Cursor]:
         if musicdb is not None:
@@ -152,21 +142,3 @@ class MusicDB:
                 pd.read_sql_query(q, self.conn).to_csv(output_csv, index=False)
                 output_csvs.append(output_csv)
             return output_csvs
-
-
-#def lookup_video_id(track_id: str, cursor):
-    #video_id = cursor.execute('''
-    #select video_id from audio_files where track_id = ?
-                    #''', (track_id,)).fetchone()
-    #if video_id is None:
-        #return None
-    #else:
-        #return video_id[0]
-
-#def lookup_audio_path(track_id: str, cursor = None) -> str | None:
-    #cursor.execute("SELECT audio_path FROM audio_files WHERE track_id = ?", (track_id,))
-    #audio_path = cursor.fetchone()
-    #if audio_path:
-        #return audio_path[0]
-    #else:
-        #return None

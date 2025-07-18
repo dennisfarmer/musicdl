@@ -21,7 +21,6 @@ class MusicDownloader:
 
     def download_from_url(self, url) -> Track|Album|Playlist|Artist:
         _id, id_type = self.parse_url(url)
-        self.idx += 1
         if id_type == "track":
             return self.download_track(_id)
         elif id_type == "album":
@@ -70,7 +69,7 @@ class MusicDownloader:
     def close(self):
         self.db.close()
 
-    def _process_single_url(self) -> Track|Album|Playlist|Artist:
+    def _process_single_arg(self) -> Track|Album|Playlist|Artist:
         assert self.urls is not None
         if self.idx >= len(self.urls) or self.idx < 0:
             return False, ""
@@ -82,7 +81,7 @@ class MusicDownloader:
         items = []
         self.idx = 0
         for _ in range(len(self.urls)):
-            item = self._process_single_url()
+            item = self._process_single_arg()
             if verbose: print("success" if item is not None else f"failure")
             items.append(item)
         return items
