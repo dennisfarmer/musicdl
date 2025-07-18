@@ -28,7 +28,7 @@ source .venv/bin/activate
 which musicdl
 # /home/username/musicdl/.venv/bin/musicdl
 ```
-as well as a Python package:
+... as well as a Python package:
 ```python
 # python3 -m venv .venv && source .venv/bin/activate
 # git clone https://github.com/dennisfarmer/musicdl.git
