@@ -69,14 +69,24 @@ class SpotifyInterface:
         """
         retrieve individual track
         """
-        sp_track = self._sp.track(track_id)
+        try:
+            sp_track = self._sp.track(track_id)
+        except requests.exceptions.ConnectionError as e:
+            print(str(e))
+            print("Check to see if you have a reliable internet connection")
+            exit(1)
         return Track.from_spotify(track_id, sp_track)
 
     def retrieve_album(self, album_id: str) -> Album:
         """
         retrieve all tracks in an album
         """
-        sp_album = self._sp.album(album_id)
+        try:
+            sp_album = self._sp.album(album_id)
+        except requests.exceptions.ConnectionError as e:
+            print(str(e))
+            print("Check to see if you have a reliable internet connection")
+            exit(1)
         return Album.from_spotify(album_id, sp_album=sp_album)
 
     def retrieve_artist(self, artist_id: str) -> Artist:
@@ -85,7 +95,12 @@ class SpotifyInterface:
         
         singles are considered albums
         """
-        sp_artist = self._sp.artist(artist_id)
+        try:
+            sp_artist = self._sp.artist(artist_id)
+        except requests.exceptions.ConnectionError as e:
+            print(str(e))
+            print("Check to see if you have a reliable internet connection")
+            exit(1)
         artist = Artist(sp_artist["name"], sp_artist["id"])
 
         offset = 0
@@ -105,7 +120,12 @@ class SpotifyInterface:
         """
         retrieve all tracks in a playlist
         """
-        sp_playlist_tracks = self._sp.playlist_tracks(playlist_id)
+        try:
+            sp_playlist_tracks = self._sp.playlist_tracks(playlist_id)
+        except requests.exceptions.ConnectionError as e:
+            print(str(e))
+            print("Check to see if you have a reliable internet connection")
+            exit(1)
         return Playlist.from_spotify(playlist_id, sp_playlist_tracks)
 
 class YoutubeSearchError(requests.exceptions.ConnectionError):
