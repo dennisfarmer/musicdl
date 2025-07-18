@@ -9,10 +9,10 @@ pip install -r requirements.txt
 
 ```bash
 # specify urls via command line arguments: 
-python ./mdl.py -u "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00"
+python ./musicdl.py -u "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00"
 # or inside of a text file:
 echo "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00" > example.txt
-python ./mdl.py -f example.txt
+python ./musicdl.py -f example.txt
 
 # both options support multiple urls
 ```
