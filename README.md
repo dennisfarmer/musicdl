@@ -1,9 +1,8 @@
 # Package Installation:
 ```bash
 git clone https://github.com/dennisfarmer/musicdl.git
-cd musicdl
 python3 -m venv .venv && source .venv/bin/activate
-pip3 install -e .
+pip3 install -e ./musicdl
 
 # alternative: create an .env file (see .env_example)
 export SPOTIPY_CLIENT_ID="your client id here"
@@ -24,15 +23,21 @@ export SPOTIPY_CLIENT_SECRET="your client secret here"
 
 3. `musicdl` is usable as both a command line script,
 ```bash
-source .venv/bin/activate
-which musicdl
+tail -n2 pyproject.toml
+# [project.scripts]
+# musicdl = "musicdl.cli:main"
+
+source .venv/bin/activate && which musicdl
 # /home/username/musicdl/.venv/bin/musicdl
 ```
 ...as well as a Python package:
 ```python
-# python3 -m venv .venv && source .venv/bin/activate
-# git clone https://github.com/dennisfarmer/musicdl.git
-# pip install -e ./musicdl
+# ------------------------------------------------------------------------------
+# the following line runs the code contained in src/musicdl/__main__.py:
+# python3 -m musicdl -u "https://open.spotify.com/artist/4Gso3d4CscCijv0lmajZWs"
+# ------------------------------------------------------------------------------
+
+#!/usr/bin/env python 
 
 from musicdl.cli import MusicDownloader
 mdl = MusicDownloader()
