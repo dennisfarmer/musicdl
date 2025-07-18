@@ -72,7 +72,8 @@ class SpotifyInterface:
         try:
             sp_track = self._sp.track(track_id)
         except requests.exceptions.ConnectionError as e:
-            print(str(e))
+            #print(str(e))
+            print("[Errno -3] Temporary failure in name resolution")
             print("Check to see if you have a reliable internet connection")
             exit(1)
         return Track.from_spotify(track_id, sp_track)
@@ -84,7 +85,8 @@ class SpotifyInterface:
         try:
             sp_album = self._sp.album(album_id)
         except requests.exceptions.ConnectionError as e:
-            print(str(e))
+            #print(str(e))
+            print("[Errno -3] Temporary failure in name resolution")
             print("Check to see if you have a reliable internet connection")
             exit(1)
         return Album.from_spotify(album_id, sp_album=sp_album)
@@ -98,7 +100,8 @@ class SpotifyInterface:
         try:
             sp_artist = self._sp.artist(artist_id)
         except requests.exceptions.ConnectionError as e:
-            print(str(e))
+            #print(str(e))
+            print("[Errno -3] Temporary failure in name resolution")
             print("Check to see if you have a reliable internet connection")
             exit(1)
         artist = Artist(sp_artist["name"], sp_artist["id"])
@@ -123,7 +126,8 @@ class SpotifyInterface:
         try:
             sp_playlist_tracks = self._sp.playlist_tracks(playlist_id)
         except requests.exceptions.ConnectionError as e:
-            print(str(e))
+            #print(str(e))
+            print("[Errno -3] Temporary failure in name resolution")
             print("Check to see if you have a reliable internet connection")
             exit(1)
         return Playlist.from_spotify(playlist_id, sp_playlist_tracks)
@@ -183,7 +187,8 @@ class YoutubeInterface:
                     binary_path
                 )
             except urllib.error.URLError as e:
-                print(str(e))
+                #print(str(e))
+                print("[Errno -3] Temporary failure in name resolution")
                 print("Check to see if you have a reliable internet connection")
                 exit(1)
             os.chmod(binary_path, 0o755)
