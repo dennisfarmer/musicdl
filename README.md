@@ -1,4 +1,4 @@
-# Python Package Installation:
+# Package Installation:
 ```bash
 git clone https://github.com/dennisfarmer/musicdl.git
 cd musicdl
@@ -72,7 +72,7 @@ tree ./data
 
 [![DonToliver_NoIdea_r-nPqWGG6c.mp3](https://img.youtube.com/vi/_r-nPqWGG6c/0.jpg)](https://www.youtube.com/watch?v=_r-nPqWGG6c)
 
-# Help Page (`musicdl --help`)
+# Help Page: `musicdl --help`
 
 ```
 usage: musicdl [-h] [-u [URLS ...]] [-f [FILE]] [--export] [--uninstall]
