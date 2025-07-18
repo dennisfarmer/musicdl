@@ -1,14 +1,21 @@
-class TrackContainer():
+import abc
+
+class TrackContainer(abc.ABC):
     """
-    A Track, Album, Playlist, or Artist
+    Abstract Base Class representing a Track, Album, Playlist, or Artist
     """
+    @abc.abstractmethod
     def __init__(self):
         pass
+
     @staticmethod
+    @abc.abstractmethod
     def from_spotify():
         pass
+
+    @abc.abstractmethod
     def __str__():
-        return ""
+        pass
 
 
 class Track(TrackContainer):
@@ -25,20 +32,30 @@ class Track(TrackContainer):
         self.audio_path = audio_path
 
     @staticmethod
-    def from_spotify(track_id, sp_track):
+    def from_spotify(track_id, sp_track, album=None):
         sp_track_details = sp_track.copy()
         if "track" in sp_track_details:
             sp_track_details = sp_track_details["track"]
         assert track_id == sp_track_details["id"]
+        if album is None:
+            album_name = sp_track_details["album"]["name"]
+            album_id = sp_track_details["album"]["id"]
+            image_url = sp_track_details["album"]["images"][0]["url"]
+            release_date = sp_track_details["album"]["release_date"]
+        else:
+            album_name = album.name
+            album_id = album.id
+            image_url = album.image_url
+            release_date = album.release_date
         return Track(
             track_id=track_id,
             name=sp_track_details["name"],
             artist_id=sp_track_details["artists"][0]["id"],
             artist_name=sp_track_details["artists"][0]["name"],
-            album_id = sp_track_details["album"]["id"],
-            album_name = sp_track_details["album"]["name"],
-            image_url = sp_track_details["album"]["images"][0]["url"],
-            release_date = sp_track_details["album"]["release_date"],
+            album_id = album_id,
+            album_name = album_name,
+            image_url = image_url,
+            release_date = release_date,
             video_id=None,
             audio_path=None
         )
@@ -47,17 +64,15 @@ class Track(TrackContainer):
         #return getattr(self, key)
 
     def __str__(self):
-        return f"""Track Info:
-        id = {self.id}
-        name = {self.name}
-        artist_id = {self.artist_id}
-        artist_name = {self.artist_name}
-        album_id = {self.album_id}
-        album_name = {self.album_name}
-        image_url = {self.image_url}
-        release_date = {self.release_date}
-        video_id = {self.video_id}
-        audio_path = {self.audio_path}"""
+        s = f"Track - {self.name} by {self.artist_name} ({self.release_date}) - {self.id}"
+        s += f"\n\tartist_id = {self.artist_id}"
+        s += f"\n\talbum_id = {self.album_id}"
+        s += f"\n\talbum_name = {self.album_name}"
+        s += f"\n\timage_url = {self.image_url}"
+        s += f"\n\trelease_date = {self.release_date}"
+        s += f"\n\tvideo_id = {self.video_id}"
+        s += f"\n\taudio_path = {self.audio_path}"
+        return s
 
 class Album(TrackContainer):
     def __init__(self, album_name: str = None, album_id: str = None, artist_name: str = None, artist_id: str = None, release_date: str = None, image_url: str = None, tracks: dict[str, Track] = None):
@@ -84,19 +99,19 @@ class Album(TrackContainer):
         )
         for track in sp_album_details['tracks']['items']:
             track_id = track['id']
-            album.tracks[track_id] = Track.from_spotify(track_id, track)
+            album.tracks[track_id] = Track.from_spotify(track_id, track, album)
         return album
 
     def __str__(self):
-        s = f"{self.name} by {self.artist} ({self.release_date}) - {self.id}"
+        s = f"Album - {self.name} by {self.artist_name} ({self.release_date}) - {self.id}"
         for i, track in enumerate(self.tracks.values()):
-            s += f"\n\t\t{i}. {track.name}"
+            s += f"\n\t{i+1}. {track.name}"
         return s
 
 class Playlist(TrackContainer):
     def __init__(self, playlist_id: str, tracks: dict[str, Track]):
         self.id = playlist_id
-        self.tracks = tracks
+        self.tracks: dict[str, Track] = tracks
 
     @staticmethod
     def from_spotify(playlist_id, sp_playlist_tracks):
@@ -111,22 +126,28 @@ class Playlist(TrackContainer):
                 print("\t\tTrack has been removed from Spotify, skipping...")
                 continue
             playlist.tracks[track_id] = Track.from_spotify(track_id, track)
+        return playlist
 
     def __str__(self):
-        s = f"Playlist {self.id}"
+        s = f"Playlist - {self.id}"
         for i, track in enumerate(self.tracks.values()):
-            s += f"\n\t\t{i}. {track.name}"
+            s += f"\n\t{i+1}. {track.name}"
         return s
 
 class Artist(TrackContainer):
     def __init__(self, artist_name: str = None, artist_id: str = None):
         self.name = artist_name
         self.id = artist_id
-        self.albums = {}
+        self.albums: dict[str, Album] = {}
 
     @staticmethod
     def from_spotify():
         raise NotImplementedError("use `SpotifyInterface.retrieve_artist(artist_id)` to retrieve artist tracks")
 
     def __str__(self):
-        return f"{self.name} - {self.id}"
+        s = f"Artist - {self.name} - {self.id}"
+        for i, album in enumerate(self.albums.values()):
+            s += f"\n\t{i+1}. {album.name} ({album.release_date})"
+            for j, track in enumerate(album.tracks.values()):
+                s += f"\n\t\t{j+1}. {track.name}"
+        return s

@@ -48,6 +48,18 @@ class SpotifyInterface:
                     raise ValueError(f"Invalid URL: {url}")
         raise ValueError(f"Invalid URL: {url}")
 
+    def retrieve_track_container(self, url) -> Track|Album|Playlist|Artist:
+        tc_id, tc_type = self.parse_url(url)
+        if tc_type == "track":
+            return self.retrieve_track(tc_id)
+        elif tc_type == "album":
+            return self.retrieve_album(tc_id)
+        elif tc_type == "playlist":
+            return self.retrieve_playlist(tc_id)
+        elif tc_type == "artist":
+            return self.retrieve_artist(tc_id)
+
+
     def retrieve_track(self, track_id: str) -> Track:
         """
         retrieve individual track
@@ -60,7 +72,7 @@ class SpotifyInterface:
         retrieve all tracks in an album
         """
         sp_album = self._sp.album(album_id)
-        return Album.from_spotify(album_id, sp_album_details=sp_album)
+        return Album.from_spotify(album_id, sp_album=sp_album)
 
     def retrieve_artist(self, artist_id: str) -> Artist:
         """
@@ -189,8 +201,9 @@ class YoutubeInterface:
         this is done for file system access reasons; individual folders 
         with many files are difficult for most file managers to work with
         """
-        hash_value = sum(ord(char) for char in video_id) % 100 + 1
-        return f"{hash_value:03}"
+        number_of_folders = 10
+        hash_value = sum(ord(char) for char in video_id) % number_of_folders + 1
+        return f"{hash_value:02}"
 
     #def add_missing_video_ids(self, tracks: list[Track], max_calls: int|None = 5) -> list[dict]:
         #if max_calls is None:
@@ -209,7 +222,7 @@ class YoutubeInterface:
             #new_tracks.append(track)
         #return new_tracks
 
-    def _download(self, track: Track, video_id: str, force=False) -> str:
+    def _download(self, track: Track, video_id: str, force=False, no_hash=False) -> str:
         """
         use yt-dlp to download the youtube audio stream and save to mp3
 
@@ -218,7 +231,10 @@ class YoutubeInterface:
         artist_name = track.artist_name
         track_name = track.name
         url = f"https://www.youtube.com/watch?v={video_id}"
-        output_dir = os.path.join(audio_storage, self._hash_id(video_id))
+        if no_hash:
+            output_dir = audio_storage
+        else:
+            output_dir = os.path.join(audio_storage, self._hash_id(video_id))
         os.makedirs(output_dir, exist_ok=True)
 
         audio_path = os.path.join(output_dir, f"{''.join(c for c in artist_name if c.isalnum())}_{''.join(c for c in track_name if c.isalnum())}{video_id}.mp3")
