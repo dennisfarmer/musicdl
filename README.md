@@ -1,18 +1,23 @@
-# Installation
+# Setup:
 ```bash
 git clone https://github.com/dennisfarmer/musicdl.git
 cd musicdl
 python3 -m venv .venv && source .venv/bin/activate
 pip3 install -e .
 
+# alternative: create an .env file (see .env_example)
 export SPOTIPY_CLIENT_ID="your client id here"
 export SPOTIPY_CLIENT_SECRET="your client secret here"
-# alternative: create an .env file (see .env_example)
 ```
 
-# Example
+# Example:
 ```bash
 musicdl -u "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00"
+
+# alternative: provide a file containing many urls
+echo "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00" > tracks.txt
+musicdl -f tracks.txt
+
 # Track - No Idea by Don Toliver (2020-03-13) - 7AzlLxHn24DxjgQX73F9fU
         # artist_id = 4Gso3d4CscCijv0lmajZWs
         # album_id = 7z4GhRfLqfSkqrj5F3Yt2B
