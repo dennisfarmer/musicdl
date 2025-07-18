@@ -203,7 +203,10 @@ class YoutubeInterface:
         """
         number_of_folders = 10
         hash_value = sum(ord(char) for char in video_id) % number_of_folders + 1
-        return f"{hash_value:02}"
+        if number_of_folders <= 10:
+            return f"{hash_value:02}"
+        else:
+            return f"{hash_value:03}"
 
     #def add_missing_video_ids(self, tracks: list[Track], max_calls: int|None = 5) -> list[dict]:
         #if max_calls is None:
