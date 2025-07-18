@@ -20,6 +20,13 @@ class MusicDownloader:
         self.db = MusicDB()
 
     def from_url(self, url: str, verbose=False) -> TrackContainer:
+        """
+        download YouTube audio using Spotify details at `url`, and save all information in `music.db`
+        
+        mp3 files are saved to `$AUDIO_STORAGE`, and referenced to in `music.db` via their absolute file path
+
+        returns `Track`, `Album`, `Playlist`, or `Artist` object
+        """
         tc = self.spi.retrieve_track_container(url)
         self.yti.add_audio(tc)
         self.db.add(tc)
@@ -60,7 +67,6 @@ def read_input():
                             "download mp3s using one or more Spotify urls",
                             "note: be sure to surround each url with double quotes",
                             "",
-                            "Example:",
                             "musicdl -u \\",
                                 '  "https://open.spotify.com/album/2YuS718NZa9vTJk9eoyD9B?si=a6BbX_G2TPKyrTnXniafuQ" \\',
                                 '  "https://open.spotify.com/playlist/5E9bcB7cxoDOuT6zHcN2zB?si=b43d397f80c34746"',
@@ -71,13 +77,26 @@ def read_input():
                         help="\n".join([
                             "download mp3s using a text file containing Spotify urls",
                             "",
-                            "Example:",
                             "cat << EOF > example.txt",
                             '"https://open.spotify.com/artist/4A8byZgEqs8YRqUQ2HMmhA?si=771plXN7SqeYgfBEvCq4kw"',
                             '"https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00"',
                             "EOF", 
                             "", 
                             "musicdl -f example.txt",
+                            "", 
+                            hline
+                            ]))
+    parser.add_argument("--export", action="store_true", default=False,
+                        help="\n".join([
+                            "save music database to a CSV file for further processing",
+                            "",
+                            "musicdl --export",
+                            "tree ./data",
+                            "     ├── mp3s",
+                            "     │   └── 10",
+                            "     │       └── DonToliver_NoIdea_r-nPqWGG6c.mp3",
+                            "     ├── music.db",
+                            "     └── tracks.csv  <--",
                             "", 
                             hline
                             ]))
@@ -95,6 +114,10 @@ def read_input():
     args = parser.parse_args()
     urls = args.urls
     file = args.file
+    if args.export:
+        db = MusicDB()
+        db.to_csv(output_directory = "./data", single_file = True)
+        exit(0)
     if args.uninstall:
         YoutubeInterface.uninstall_ytdlp()
         exit(0)
@@ -115,9 +138,7 @@ def main():
     urls = read_input()
     mdl = MusicDownloader()
     for url in urls:
-        tc = mdl.from_url(url, verbose=True)
-
-    output_csv = mdl.to_csv(single_file=True)
+        mdl.from_url(url, verbose=True)
 
 
 
