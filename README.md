@@ -1,4 +1,4 @@
-# MDL
+# Musicdl
 
 ```bash
 python -m venv .shazam_venv
