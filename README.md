@@ -15,7 +15,7 @@ export SPOTIPY_CLIENT_SECRET="your client secret here"
 musicdl -u "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00"
 
 # alternative: provide a file containing many urls
-echo "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00" > tracks.txt
+echo "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU" > tracks.txt
 musicdl -f tracks.txt
 
 # Track - No Idea by Don Toliver (2020-03-13) - 7AzlLxHn24DxjgQX73F9fU
