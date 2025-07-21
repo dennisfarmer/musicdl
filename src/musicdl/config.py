@@ -21,13 +21,12 @@ def load_config(dotenv_path: str = None):
         "client_id": env.get("SPOTIPY_CLIENT_ID") or os.getenv("SPOTIPY_CLIENT_ID"),
         "client_secret": env.get("SPOTIPY_CLIENT_SECRET") or os.getenv("SPOTIPY_CLIENT_SECRET"),
         "music_db": env.get("MUSIC_DB") or os.getenv("MUSIC_DB") or "./data/music.db",
-        "audio_storage": env.get("AUDIO_STORAGE") or os.getenv("AUDIO_STORAGE") or "./data/mp3s"
+        "audio_storage": env.get("AUDIO_STORAGE") or os.getenv("AUDIO_STORAGE") or "./data/mp3s",
+        "hash_audio_storage": env.get("HASH_AUDIO_STORAGE") or os.getenv("HASH_AUDIO_STORAGE") or False
     }
     if config.get("client_id") is None or config.get("client_secret") is None:
         print(f"Spotify API Credentials not found in {dotenv_path} or in environment variables\nPlease provide SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET\nSee https://developer.spotify.com/documentation/web-api/tutorials/getting-started for details")
         exit(1)
-
-    config["hash_audio_path"] = False
 
     return config
 

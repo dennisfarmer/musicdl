@@ -256,9 +256,9 @@ class YoutubeInterface:
         if video_id is None or force:
             video_id = self._search(track)
             audio_path = self._download(track, video_id, force=force)
-            print(f"Audio added to {track.name}")
+            print(f'Audio added to "{track.name}"')
         else:
-            print(f"Audio for {track.name} already exists in database")
+            print(f'"{track.name}" already exists in database')
         track.video_id = video_id
         track.audio_path = audio_path
         return track
@@ -334,7 +334,7 @@ class YoutubeInterface:
         track_name = track.name
         url = f"https://www.youtube.com/watch?v={video_id}"
 
-        if config["hash_audio_path"]:
+        if config["hash_audio_storage"]:
             output_dir = os.path.join(config["audio_storage"], self._hash_id(video_id))
         else:
             output_dir = config["audio_storage"]

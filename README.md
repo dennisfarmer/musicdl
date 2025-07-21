@@ -6,9 +6,11 @@ pip3 install -e ./musicdl
 ```
 
 ```bash
-export SPOTIPY_CLIENT_ID="your client id here"
-export SPOTIPY_CLIENT_SECRET="your client secret here"
-# alternative: create an .env file (see .env_example)
+# contents of .env (see config.py for details):
+SPOTIPY_CLIENT_ID="your client id here"
+SPOTIPY_CLIENT_SECRET="your client secret here"
+MUSIC_DB="./data/music.db"    # optional
+AUDIO_STORAGE="./data/mp3s"   # optional
 ```
 
 # Overview:
@@ -136,4 +138,4 @@ options:
 ```
 
 todo:
-- add some logging / output
+- add some better logging / output
