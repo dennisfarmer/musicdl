@@ -45,10 +45,11 @@ def load_config(dotenv_path: str = None):
         # └── 10
         "hash_mp3_storage": env.get("HASH_MP3_STORAGE") or "True"
     }
-    if config.get("client_id") is None or config.get("client_secret") is None:
+    client_id, client_secret = config.get("client_id"), config.get("client_secret")
+    if client_id is None or client_secret is None or client_id == "" or client_secret == "":
         print("\n".join([f"Spotify API Credentials not found in {dotenv_path} or in environment variables",
                          "Please provide SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET",
-                         "See https://developer.spotify.com/documentation/web-api/tutorials/getting-started for details"
+                         "https://developer.spotify.com/documentation/web-api/tutorials/getting-started"
                          ]))
         exit(1)
     
