@@ -15,7 +15,7 @@ AUDIO_STORAGE="./data/mp3s"   # optional
 
 To obtain Spotify credentials:
 1. Create a (free) Spotify account
-2. Follow the steps listed in the !(Getting started with Web API)(https://developer.spotify.com/documentation/web-api/tutorials/getting-started) guide.
+2. Follow the steps listed in the [Getting started with Web API](https://developer.spotify.com/documentation/web-api/tutorials/getting-started) guide.
         - The Redirect URIs section is required but not used; https://example.com/callback is fine
         - Make sure that "Web API" is selected as one of the APIs being used
         - This application does follow the Developer Terms [Section IV restrictions](https://developer.spotify.com/terms#section-iv-restrictions) on training a machine learning or AI model with Spotify content, since the model will be using the raw audio data obtained from YouTube.
