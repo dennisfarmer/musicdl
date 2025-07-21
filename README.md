@@ -15,7 +15,9 @@ SPOTIFY_CLIENT_SECRET="your client secret here"
 - Create a [Spotify account](https://www.spotify.com/us/signup)
 - Follow the [Getting started with Web API](https://developer.spotify.com/documentation/web-api/tutorials/getting-started) guide
     - Make sure that "Web API" is selected
-    - You can just use `https://example.com/callback` as the Redirect URI
+    - Redirect URI: `https://example.com/callback`
+- Add your credentials to a file named `.env` in the directory where `musicdl` is being used
+
 
 # Overview:
 
