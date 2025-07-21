@@ -334,10 +334,10 @@ class YoutubeInterface:
         track_name = track.name
         url = f"https://www.youtube.com/watch?v={video_id}"
 
-        if config["hash_audio_storage"]:
-            output_dir = os.path.join(config["audio_storage"], self._hash_id(video_id))
+        if config["hash_mp3_storage"]:
+            output_dir = os.path.join(config["mp3_storage"], self._hash_id(video_id))
         else:
-            output_dir = config["audio_storage"]
+            output_dir = config["mp3_storage"]
         os.makedirs(output_dir, exist_ok=True)
 
         audio_path = os.path.join(output_dir, f"{''.join(c for c in artist_name if c.isalnum())}_{''.join(c for c in track_name if c.isalnum())}{video_id}.mp3")
@@ -454,10 +454,13 @@ class MusicDB:
     def close(self):
         self.conn.close()
 
-    def to_csv(self, output_directory="./data", single_file=True) -> str|list[str]:
-        for file in os.listdir(output_directory):
-            if file.endswith(".csv"):
-                os.remove(os.path.join(output_directory, file))
+    def to_csv(self, single_file=True) -> str|list[str]:
+        csv_storage = config["csv_storage"]
+        col_names = ["tracks", "artists", "albums", "audio_files"]
+        #for file in os.listdir(csv_storage):
+        for col in col_names:
+            file = os.path.join(csv_storage, f"{col}.csv")
+            if os.path.exists(file): os.remove(file)
         if single_file:
             query = """
             SELECT
@@ -479,16 +482,16 @@ class MusicDB:
 
             df = pd.read_sql_query(query, self.conn)
             df["audio_path"] = df["audio_path"].apply(os.path.abspath)
-            output_csv = os.path.join(output_directory, "tracks.csv")
+            output_csv = os.path.join(csv_storage, "tracks.csv")
             df.to_csv(output_csv, index=False)
             return output_csv
 
 
         else:
-            queries = {t: f"SELECT * from {t}" for t in ["tracks", "artists", "albums", "audio_files"]}
+            queries = {t: f"SELECT * from {t}" for t in col_names}
             output_csvs = []
             for t, q in queries.items():
-                output_csv = os.path.join(output_directory, f"{t}_table.csv")
+                output_csv = os.path.join(csv_storage, f"{t}_table.csv")
                 pd.read_sql_query(q, self.conn).to_csv(output_csv, index=False)
                 output_csvs.append(output_csv)
             return output_csvs

@@ -18,15 +18,40 @@ def load_config(dotenv_path: str = None):
     env = dotenv_values(dotenv_path)
 
     config = {
-        "client_id": env.get("SPOTIPY_CLIENT_ID") or os.getenv("SPOTIPY_CLIENT_ID"),
-        "client_secret": env.get("SPOTIPY_CLIENT_SECRET") or os.getenv("SPOTIPY_CLIENT_SECRET"),
+        "client_id": env.get("SPOTIFY_CLIENT_ID") or os.getenv("SPOTIFY_CLIENT_ID"),
+        "client_secret": env.get("SPOTIFY_CLIENT_SECRET") or os.getenv("SPOTIFY_CLIENT_SECRET"),
+
+        # specify the path of the sqlite database file
         "music_db": env.get("MUSIC_DB") or os.getenv("MUSIC_DB") or "./data/music.db",
-        "audio_storage": env.get("AUDIO_STORAGE") or os.getenv("AUDIO_STORAGE") or "./data/mp3s",
-        "hash_audio_storage": env.get("HASH_AUDIO_STORAGE") or os.getenv("HASH_AUDIO_STORAGE") or False
+
+        # specify the directory where downloaded mp3 files should be stored
+        "mp3_storage": env.get("MP3_STORAGE") or os.getenv("MP3_STORAGE") or "./data/mp3s",
+
+        # specify the directory where the exported CSV file(s) should be stored
+        "csv_storage": env.get("CSV_STORAGE") or os.getenv("CSV_STORAGE") or "./data",
+
+        # split the storing of mp3s into multiple directories
+        # $MP3_STORAGE
+        # ├── 01
+        # ├── 02
+        # ├── 03
+        # ├── 04
+        # ├── 05
+        # ├── 06
+        # ├── 07
+        # ├── 08
+        # ├── 09
+        # └── 10
+        "hash_mp3_storage": env.get("HASH_MP3_STORAGE") or "True"
     }
     if config.get("client_id") is None or config.get("client_secret") is None:
-        print(f"Spotify API Credentials not found in {dotenv_path} or in environment variables\nPlease provide SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET\nSee https://developer.spotify.com/documentation/web-api/tutorials/getting-started for details")
+        print("\n".join([f"Spotify API Credentials not found in {dotenv_path} or in environment variables",
+                         "Please provide SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET",
+                         "See https://developer.spotify.com/documentation/web-api/tutorials/getting-started for details"
+                         ]))
         exit(1)
+    
+    config["hash_mp3_storage"] = config["hash_mp3_storage"] == "True"
 
     return config
 

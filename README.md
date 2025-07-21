@@ -7,18 +7,19 @@ pip3 install -e ./musicdl
 
 ```bash
 # contents of .env (see config.py for details):
-SPOTIPY_CLIENT_ID="your client id here"
-SPOTIPY_CLIENT_SECRET="your client secret here"
-MUSIC_DB="./data/music.db"    # optional
-AUDIO_STORAGE="./data/mp3s"   # optional
+SPOTIFY_CLIENT_ID="your client id here"
+SPOTIFY_CLIENT_SECRET="your client secret here"
+# MUSIC_DB="./data/music.db"    # optional
+# MP3_STORAGE="./data/mp3s"     # optional
+# CSV_STORAGE="./data/mp3s"     # optional
+# HASH_MP3_STORAGE=False        # optional
 ```
 
-To obtain Spotify credentials:
-- Create a (free) Spotify account
-- Follow the steps listed in the [Getting started with Web API](https://developer.spotify.com/documentation/web-api/tutorials/getting-started) guide.
-    - The Redirect URIs section is required but not used; `https://example.com/callback` is fine
+## Spotify API Setup
+- Create a [Spotify account](https://www.spotify.com/us/signup)
+- Follow the [Getting started with Web API](https://developer.spotify.com/documentation/web-api/tutorials/getting-started) guide
     - Make sure that "Web API" is selected as one of the APIs being used
-    - This application does follow the [Section IV restrictions](https://developer.spotify.com/terms#section-iv-restrictions) on training a model with Spotify's content, since the model instead uses the audio data obtained from YouTube.
+    - The Redirect URIs section is required but not used; `https://example.com/callback` is fine
 
 # Overview:
 
@@ -104,7 +105,6 @@ options:
 ---------------------------------------------------------
                  
   -u [URLS ...]  download mp3s using one or more Spotify urls
-                 note: be sure to surround each url with double quotes
                  
                  musicdl -u \
                    "https://open.spotify.com/album/2YuS718NZa9vTJk9eoyD9B" \

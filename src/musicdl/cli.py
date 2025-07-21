@@ -65,7 +65,6 @@ def read_input():
     parser.add_argument("-u", dest="urls", nargs="*", default=None, 
                         help="\n".join([
                             "download mp3s using one or more Spotify urls",
-                            "note: be sure to surround each url with double quotes",
                             "",
                             "musicdl -u \\",
                                 '  "https://open.spotify.com/album/2YuS718NZa9vTJk9eoyD9B" \\',
@@ -116,7 +115,7 @@ def read_input():
     file = args.file
     if args.export:
         db = MusicDB()
-        db.to_csv(output_directory = "./data", single_file = True)
+        db.to_csv()
         exit(0)
     if args.uninstall:
         YoutubeInterface.uninstall_ytdlp()
