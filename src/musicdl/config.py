@@ -18,19 +18,20 @@ def load_config(dotenv_path: str = None):
     env = dotenv_values(dotenv_path)
 
     config = {
+        # https://developer.spotify.com/documentation/web-api/tutorials/getting-started
         "client_id": env.get("SPOTIFY_CLIENT_ID") or os.getenv("SPOTIFY_CLIENT_ID"),
         "client_secret": env.get("SPOTIFY_CLIENT_SECRET") or os.getenv("SPOTIFY_CLIENT_SECRET"),
 
         # specify the path of the sqlite database file
         "music_db": env.get("MUSIC_DB") or os.getenv("MUSIC_DB") or "./data/music.db",
 
-        # specify the directory where downloaded mp3 files should be stored
+        # specify the directory where the downloaded mp3 files should be stored
         "mp3_storage": env.get("MP3_STORAGE") or os.getenv("MP3_STORAGE") or "./data/mp3s",
 
         # specify the directory where the exported CSV file(s) should be stored
         "csv_storage": env.get("CSV_STORAGE") or os.getenv("CSV_STORAGE") or "./data",
 
-        # split the storing of mp3s into multiple directories
+        # split the storing of mp3s into multiple directories (True/False)
         # $MP3_STORAGE
         # ├── 01
         # ├── 02

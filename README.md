@@ -6,20 +6,16 @@ pip3 install -e ./musicdl
 ```
 
 ```bash
-# contents of .env (see config.py for details):
+# contents of ./.env (see .env_example for details):
 SPOTIFY_CLIENT_ID="your client id here"
 SPOTIFY_CLIENT_SECRET="your client secret here"
-# MUSIC_DB="./data/music.db"    # optional
-# MP3_STORAGE="./data/mp3s"     # optional
-# CSV_STORAGE="./data/mp3s"     # optional
-# HASH_MP3_STORAGE=False        # optional
 ```
 
 ## Spotify API Setup
 - Create a [Spotify account](https://www.spotify.com/us/signup)
 - Follow the [Getting started with Web API](https://developer.spotify.com/documentation/web-api/tutorials/getting-started) guide
-    - Make sure that "Web API" is selected as one of the APIs being used
-    - The Redirect URIs section is required but not used; `https://example.com/callback` is fine
+    - Make sure that "Web API" is selected
+    - You can just use `https://example.com/callback` as the Redirect URI
 
 # Overview:
 
