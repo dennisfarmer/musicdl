@@ -136,8 +136,8 @@ options:
   --uninstall    uninstall musicdl's yt-dlp binary
                  
                  Equivalent to:
-                   rm /Users/dennisfj/Library/Caches/musicdl/yt-dlp*
-                   rmdir /Users/dennisfj/Library/Caches/musicdl
+                   rm /(user_cache)/musicdl/yt-dlp*
+                   rmdir /(user_cache)/musicdl
                  
 ---------------------------------------------------------
 ```
