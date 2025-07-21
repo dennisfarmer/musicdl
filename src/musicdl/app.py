@@ -15,6 +15,13 @@ from platformdirs import user_cache_dir
 from musicdl import Track, Playlist, Album, Artist, TrackContainer
 from musicdl.config import config
 
+def retrieve_db_audio(cursor: Cursor, track_id: str) -> tuple[str, str] | tuple[None, None]:
+    cursor.execute("SELECT video_id, audio_path FROM audio_files WHERE track_id = ?", (track_id,))
+    result = cursor.fetchone()
+    if result:
+        return result  # (video_id, audio_path)
+    return None, None
+
 class SpotifyInterface:
     """
     ```
@@ -24,7 +31,8 @@ class SpotifyInterface:
     track = spi.construct_track(track_id)
     ```
     """
-    def __init__(self):
+    def __init__(self, cursor: Cursor):
+        self.cursor = cursor
         self._sp = spotipy.Spotify(
             auth_manager=spotipy.oauth2.SpotifyClientCredentials(
                 client_id=config["client_id"],
@@ -160,12 +168,13 @@ class YoutubeInterface:
     track.audio_path
     ```
     """
-    def __init__(self):
+    def __init__(self, cursor: Cursor):
         """
         ensures that yt-dlp is installed to user cache directory
 
         yt-dlp can be uninstalled with YoutubeInterface.uninstall_ytdlp()
         """
+        self.cursor = cursor
         system = platform.system()
         if system == "Darwin":
             binary = "yt-dlp_macos"
@@ -216,36 +225,44 @@ class YoutubeInterface:
         else:
             print(f"Already uninstalled {cache_dir}")
 
-    def add_audio(self, tc: TrackContainer, inplace=True, force_replace_existing_download=False) -> None|Track:
+    def add_audio(self, tc: TrackContainer, force_replace_existing_download=False) -> TrackContainer|None:
         """
         adds audio mp3(s) to a TrackContainer
         """
         assert isinstance(tc, TrackContainer)
         if isinstance(tc, Track):
-            return self._add_audio_to_track(tc, inplace, force_replace_existing_download)
-        if not inplace:
-            tc = copy(tc)
+            video_id, audio_path = retrieve_db_audio(tc.id)
+            if video_id is None:
+                return self._add_audio_to_track(tc, force_replace_existing_download)
+            else:
+                tc.video_id = video_id
+                tc.audio_path = audio_path
+                return tc
+        tc = copy(tc)
         if isinstance(tc, Album) or isinstance(tc, Playlist):
             for track_id, track in tc.tracks.items():
-                tc.tracks[track_id] = self._add_audio_to_track(track, False, force_replace_existing_download)
+                tc.tracks[track_id] = self._add_audio_to_track(track, force_replace_existing_download)
         elif isinstance(tc, Artist):
             for album_id, album in tc.albums.items():
-                tc.albums[album_id] = self.add_audio(album, False, force_replace_existing_download)
-        if not inplace:
-            return tc
+                tc.albums[album_id] = self.add_audio(album, force_replace_existing_download)
+        return tc
 
-    def _add_audio_to_track(self, track: Track, inplace=True, force=False) -> None|Track:
+    def _add_audio_to_track(self, track: Track, force=False) -> Track:
         """
         adds audio mp3 to track (video_id and audio_path)
         """
-        if not inplace:
-            track = copy(track)
-        video_id = self._search(track)
-        audio_path = self._download(track, video_id, force=force)
+        track = copy(track)
+        video_id, audio_path = retrieve_db_audio(self.cursor, track.id)
+        if video_id is None or force:
+            video_id = self._search(track)
+            audio_path = self._download(track, video_id, force=force)
+            print(f"Audio added to {track.name}")
+        else:
+            print(f"Audio for {track.name} already exists in database")
         track.video_id = video_id
         track.audio_path = audio_path
-        if not inplace:
-            return track
+        return track
+
 
     def _search(self, track: Track) -> str:
         """
@@ -307,7 +324,7 @@ class YoutubeInterface:
             #new_tracks.append(track)
         #return new_tracks
 
-    def _download(self, track: Track, video_id: str, force=False, no_hash=False) -> str:
+    def _download(self, track: Track, video_id: str, force=False) -> str:
         """
         use yt-dlp to download the youtube audio stream and save to mp3
 
@@ -316,10 +333,11 @@ class YoutubeInterface:
         artist_name = track.artist_name
         track_name = track.name
         url = f"https://www.youtube.com/watch?v={video_id}"
-        if no_hash:
-            output_dir = config["audio_storage"]
-        else:
+
+        if config["hash_audio_path"]:
             output_dir = os.path.join(config["audio_storage"], self._hash_id(video_id))
+        else:
+            output_dir = config["audio_storage"]
         os.makedirs(output_dir, exist_ok=True)
 
         audio_path = os.path.join(output_dir, f"{''.join(c for c in artist_name if c.isalnum())}_{''.join(c for c in track_name if c.isalnum())}{video_id}.mp3")
@@ -342,6 +360,7 @@ class MusicDB:
         self.conn=None
         self.cursor=None
         self.connect_to_database()
+     
 
     def _insert_track(self, track: Track):
         self.cursor.execute('''
@@ -367,9 +386,11 @@ class MusicDB:
         video_id = excluded.video_id,
         audio_path = excluded.audio_path;
         ''', (track.id, track.video_id, track.audio_path))
+        self.conn.commit()
 
     def _insert_collection(self, c: Album|Playlist):
         for track in c.tracks.values():
+            print(track)
             self._insert_track(track)
 
     def add(self, tc: TrackContainer):
@@ -457,6 +478,7 @@ class MusicDB:
             """
 
             df = pd.read_sql_query(query, self.conn)
+            df["audio_path"] = df["audio_path"].apply(os.path.abspath)
             output_csv = os.path.join(output_directory, "tracks.csv")
             df.to_csv(output_csv, index=False)
             return output_csv

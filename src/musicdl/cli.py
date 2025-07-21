@@ -14,9 +14,9 @@ class MusicDownloader:
     ```
     """
     def __init__(self):
-        self.spi = SpotifyInterface()
-        self.yti = YoutubeInterface()
         self.db = MusicDB()
+        self.spi = SpotifyInterface(self.db.conn.cursor())
+        self.yti = YoutubeInterface(self.db.conn.cursor())
 
     def from_url(self, url: str, verbose=False) -> TrackContainer:
         """
@@ -27,7 +27,8 @@ class MusicDownloader:
         returns `Track`, `Album`, `Playlist`, or `Artist` object
         """
         tc = self.spi.retrieve_track_container(url)
-        self.yti.add_audio(tc)
+        tc = self.yti.add_audio(tc)
+        #if result is None: return tc
         self.db.add(tc)
         if verbose: print(tc)
         return tc

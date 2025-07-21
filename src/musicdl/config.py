@@ -27,6 +27,8 @@ def load_config(dotenv_path: str = None):
         print(f"Spotify API Credentials not found in {dotenv_path} or in environment variables\nPlease provide SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET\nSee https://developer.spotify.com/documentation/web-api/tutorials/getting-started for details")
         exit(1)
 
+    config["hash_audio_path"] = False
+
     return config
 
 config: dict[str, str] = load_config()
