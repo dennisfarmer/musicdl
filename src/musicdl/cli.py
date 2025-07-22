@@ -1,8 +1,12 @@
+import os
+
+import pandas as pd
 import argparse
 from argparse import ArgumentParser, RawTextHelpFormatter
 
-from musicdl import TrackContainer
+from musicdl import Track, TrackContainer
 from musicdl.app import SpotifyInterface, YoutubeInterface, MusicDB
+from musicdl.config import config
 from platformdirs import user_cache_dir
 
 class MusicDownloader:
@@ -33,8 +37,60 @@ class MusicDownloader:
         if verbose: print(tc)
         return tc
 
-    def to_csv(self, output_directory="./data", single_file=True) -> str|list[str]:
-        return self.db.to_csv(output_directory, single_file)
+    def to_csv(self, single_file=True) -> str|list[str]:
+        return self.db.to_csv(single_file)
+    
+    def from_csv(self, csv="./data/tracks.csv"):
+        # todo: add ability to move mp3 files to 
+        # new mp3s folder from old one (and update audio_path in db)
+        col_names = [
+            "track_id", "track_name", "artist_id", "artist_name",
+            "album_id", "album_name", "release_date", "image_url",
+            "video_id", "audio_path"
+        ]
+        df = pd.read_csv(csv, names=col_names, header=0)
+        for _, row in df.iterrows():
+            track = Track(
+                track_id=row["track_id"],
+                name=row["track_name"],
+                artist_id=row["artist_id"],
+                artist_name=row["artist_name"],
+                album_id=row["album_id"],
+                album_name=row["album_name"],
+                image_url=row["image_url"],
+                release_date=row["release_date"],
+                video_id=row["video_id"],
+                audio_path=row["audio_path"]
+            )
+            self.db._insert_track(track)
+
+    #def mv_mp3s(self, current_directory, current_is_hashed):
+        #def _update_audio_path(track_id, new_path, cursor):
+            #cursor.execute(
+                #"UPDATE audio_tracks SET audio_path = ? WHERE track_id = ?",
+                #(new_path, track_id)
+            #)
+
+        #def _get_all_tracks(cursor):
+            #cursor.execute("SELECT track_id, audio_path FROM audio_tracks")
+            #return cursor.fetchall()
+
+        #cursor = self.db.conn.cursor()
+        #tracks = _get_all_tracks(cursor)
+        #new_mp3_dir = config["mp3_storage"]
+
+        #for track_id, old_path in tracks:
+            #if not old_path:
+                #continue
+            #filename = os.path.basename(old_path)
+            #new_path = os.path.join(new_mp3_dir, filename)
+            #if os.path.abspath(old_path) != os.path.abspath(new_path):
+                #if os.path.exists(old_path):
+                    #os.makedirs(os.path.dirname(new_path), exist_ok=True)
+                    #os.rename(old_path, new_path)
+                #_update_audio_path(track_id, new_path, cursor)
+
+        #self.db.conn.commit()
 
     def close(self):
         self.db.close()
