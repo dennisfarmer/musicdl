@@ -1,7 +1,9 @@
-from dotenv import dotenv_values, find_dotenv
+from datetime import datetime
 import warnings
 import sys
 import os
+
+from dotenv import dotenv_values, find_dotenv
 
 def load_config(dotenv_path: str = None):
     if dotenv_path is not None and not os.path.exists(dotenv_path):
@@ -22,28 +24,15 @@ def load_config(dotenv_path: str = None):
         "client_id": env.get("SPOTIFY_CLIENT_ID") or os.getenv("SPOTIFY_CLIENT_ID"),
         "client_secret": env.get("SPOTIFY_CLIENT_SECRET") or os.getenv("SPOTIFY_CLIENT_SECRET"),
 
-        # specify the path of the sqlite database file
-        "music_db": env.get("MUSIC_DB") or os.getenv("MUSIC_DB") or "./data/music.db",
+        # specify the directory where data should be stored prior to creating zip file
+        "datadir": env.get("DATADIR") or "./data",
 
-        # specify the directory where the downloaded mp3 files should be stored
-        "mp3_storage": env.get("MP3_STORAGE") or os.getenv("MP3_STORAGE") or "./data/mp3s",
+        # specify where zip file should be stored (default: tracks_{TODAYSDATE}.zip)
+        "zip": env.get("ZIPFILE") or None
 
-        # specify the directory where the exported CSV file(s) should be stored
-        "csv_storage": env.get("CSV_STORAGE") or os.getenv("CSV_STORAGE") or "./data",
-
-        # split the storing of mp3s into multiple directories (True/False)
-        # $MP3_STORAGE
-        # ├── 01
-        # ├── 02
-        # ├── 03
-        # ├── 04
-        # ├── 05
-        # ├── 06
-        # ├── 07
-        # ├── 08
-        # ├── 09
-        # └── 10
-        "hash_mp3_storage": env.get("HASH_MP3_STORAGE") or "True"
+        # "hash_mp3_storage": env.get("HASH_MP3_STORAGE") or "False"
+        # "num_bins": env.get("NUM_BINS") or "10"
+        # "single_file": env.get("SINGLE_FILE") or "True"
     }
     client_id, client_secret = config.get("client_id"), config.get("client_secret")
     if client_id is None or client_secret is None or client_id == "" or client_secret == "":
@@ -52,8 +41,33 @@ def load_config(dotenv_path: str = None):
                          "https://developer.spotify.com/documentation/web-api/tutorials/getting-started"
                          ]))
         exit(1)
-    
-    config["hash_mp3_storage"] = config["hash_mp3_storage"] == "True"
+
+    config["music_db"] = os.path.join(config["datadir"], "music.db")
+    config["mp3_storage"] = os.path.join(config["datadir"], "mp3s")
+    config["csv_storage"] = config["datadir"]
+    config["single_file"] = True
+
+    # make the zip file path a callable so that we have the correct date when exporting
+    if config["zip"] is None:
+        config["zip"] = lambda: f'tracks-{datetime.today().strftime("%Y-%m-%d")}.zip'
+    else:
+        config["zip"] = lambda: config["zip"]
+
+    #config["hash_mp3_storage"] = config["hash_mp3_storage"] == "True"
+    #config["num_bins"] = int(config["num_bins"])
+    #config["single_file"] = config["single_file"] == "True"
+
+    ###################################################################
+    # NOTE: utilize the following config options if you find yourself 
+    #       wanting to download a massive number of mp3 files
+
+    config["hash_mp3_storage"] = False
+    config["num_bins"] = 10   # [1,100]
+
+    ###################################################################
+
+
+
 
     return config
 

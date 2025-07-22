@@ -225,15 +225,15 @@ class YoutubeInterface:
         else:
             print(f"Already uninstalled {cache_dir}")
 
-    def add_audio(self, tc: TrackContainer, force_replace_existing_download=False) -> TrackContainer|None:
+    def add_audio(self, tc: TrackContainer, force_replace_existing_download=False, verbose=False) -> TrackContainer|None:
         """
         adds audio mp3(s) to a TrackContainer
         """
         assert isinstance(tc, TrackContainer)
         if isinstance(tc, Track):
-            video_id, audio_path = retrieve_db_audio(tc.id)
+            video_id, audio_path = retrieve_db_audio(self.cursor, tc.id)
             if video_id is None:
-                return self._add_audio_to_track(tc, force_replace_existing_download)
+                return self._add_audio_to_track(tc, force_replace_existing_download, verbose)
             else:
                 tc.video_id = video_id
                 tc.audio_path = audio_path
@@ -241,13 +241,13 @@ class YoutubeInterface:
         tc = copy(tc)
         if isinstance(tc, Album) or isinstance(tc, Playlist):
             for track_id, track in tc.tracks.items():
-                tc.tracks[track_id] = self._add_audio_to_track(track, force_replace_existing_download)
+                tc.tracks[track_id] = self._add_audio_to_track(track, force_replace_existing_download, verbose)
         elif isinstance(tc, Artist):
             for album_id, album in tc.albums.items():
-                tc.albums[album_id] = self.add_audio(album, force_replace_existing_download)
+                tc.albums[album_id] = self.add_audio(album, force_replace_existing_download, verbose)
         return tc
 
-    def _add_audio_to_track(self, track: Track, force=False) -> Track:
+    def _add_audio_to_track(self, track: Track, force=False, verbose=False) -> Track:
         """
         adds audio mp3 to track (video_id and audio_path)
         """
@@ -256,9 +256,9 @@ class YoutubeInterface:
         if video_id is None or force:
             video_id = self._search(track)
             audio_path = self._download(track, video_id, force=force)
-            print(f'Audio added to "{track.name}"')
+            if verbose: print(f'Audio added to "{track.name}"')
         else:
-            print(f'"{track.name}" already exists in database')
+            if verbose: print(f'"{track.name}" already exists in database')
         track.video_id = video_id
         track.audio_path = audio_path
         return track
@@ -292,7 +292,8 @@ class YoutubeInterface:
             #print(track.name, track.artist)
             raise YoutubeSearchError(search_query=search_url, track=track)
 
-    def _hash_id(self, video_id: str) -> str:
+    @staticmethod
+    def _hash_id(video_id: str) -> str:
         """
         generate hash for splitting downloaded mp3 into seperate folders,
         based on the youtube video id
@@ -300,12 +301,16 @@ class YoutubeInterface:
         this is done for file system access reasons; individual folders 
         with many files are difficult for most file managers to work with
         """
-        number_of_folders = 10
-        hash_value = sum(ord(char) for char in video_id) % number_of_folders + 1
-        if number_of_folders <= 10:
+        num_bins = int(config["num_bins"])
+        hash_value = sum(ord(char) for char in video_id) % num_bins + 1
+        if num_bins == 1:
+            return "."
+        elif num_bins > 0 and num_bins <= 10:
             return f"{hash_value:02}"
-        else:
+        elif num_bins <= 100:
             return f"{hash_value:03}"
+        else:
+            raise ValueError("num_bins should be in the interval [1,100]")
 
     #def add_missing_video_ids(self, tracks: list[Track], max_calls: int|None = 5) -> list[dict]:
         #if max_calls is None:
@@ -335,12 +340,12 @@ class YoutubeInterface:
         url = f"https://www.youtube.com/watch?v={video_id}"
 
         if config["hash_mp3_storage"]:
-            output_dir = os.path.join(config["mp3_storage"], self._hash_id(video_id))
+            output_dir = os.path.join(config["mp3_storage"], YoutubeInterface._hash_id(video_id))
         else:
             output_dir = config["mp3_storage"]
         os.makedirs(output_dir, exist_ok=True)
 
-        audio_path = os.path.join(output_dir, f"{''.join(c for c in artist_name if c.isalnum())}_{''.join(c for c in track_name if c.isalnum())}{video_id}.mp3")
+        audio_path = os.path.join(output_dir, f"{''.join(c for c in artist_name if c.isalnum())}_{''.join(c for c in track_name if c.isalnum())}_{video_id}.mp3")
         if os.path.exists(audio_path):
             if force:
                 os.remove(audio_path)
@@ -447,6 +452,7 @@ class MusicDB:
         self.cursor.executescript(sql_script)
     
     def reset_database(self):
+        # todo: also delete mp3 files and track info csv
         if os.path.exists(self.music_db):
             os.remove(self.music_db)
         self.connect_to_database()
@@ -454,8 +460,9 @@ class MusicDB:
     def close(self):
         self.conn.close()
 
-    def to_csv(self, single_file=True) -> str|list[str]:
+    def to_csv(self) -> str|list[str]:
         csv_storage = config["csv_storage"]
+        single_file = config["single_file"]
         col_names = ["tracks", "artists", "albums", "audio_files"]
         #for file in os.listdir(csv_storage):
         for col in col_names:
@@ -480,8 +487,19 @@ class MusicDB:
             LEFT JOIN audio_files af ON t.id = af.track_id;
             """
 
+            def format_for_zip(filepath: str):
+                filepath = os.path.abspath(filepath)
+                parts = filepath.split(os.sep)
+                if "mp3s" in parts:
+                    mp3s_index = parts.index("mp3s")
+                    # Reconstruct the path as ./mp3s/SONG.mp3
+                    return os.path.join(".", *parts[mp3s_index:],)
+                else:
+                    return os.path.join("./mp3s", os.path.basename(filepath))
+
+
             df = pd.read_sql_query(query, self.conn)
-            df["audio_path"] = df["audio_path"].apply(os.path.abspath)
+            df["audio_path"] = df["audio_path"].apply(format_for_zip)
             output_csv = os.path.join(csv_storage, "tracks.csv")
             df.to_csv(output_csv, index=False)
             return output_csv

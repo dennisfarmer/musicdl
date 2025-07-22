@@ -1,13 +1,14 @@
 import os
+import zipfile
 
 import pandas as pd
 import argparse
 from argparse import ArgumentParser, RawTextHelpFormatter
+from platformdirs import user_cache_dir
 
 from musicdl import Track, TrackContainer
 from musicdl.app import SpotifyInterface, YoutubeInterface, MusicDB
 from musicdl.config import config
-from platformdirs import user_cache_dir
 
 class MusicDownloader:
     """
@@ -15,6 +16,7 @@ class MusicDownloader:
     mdl = MusicDownloader()
     track_url = "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU"
     track = mdl.from_url(track_url)
+    mdl.close()
     ```
     """
     def __init__(self):
@@ -22,27 +24,22 @@ class MusicDownloader:
         self.spi = SpotifyInterface(self.db.conn.cursor())
         self.yti = YoutubeInterface(self.db.conn.cursor())
 
-    def from_url(self, url: str, verbose=False) -> TrackContainer:
+    def from_url(self, url: str, verbose=True) -> TrackContainer:
         """
         download YouTube audio using Spotify details at `url`, and save all information in `music.db`
         
-        mp3 files are saved to `$AUDIO_STORAGE`, and referenced to in `music.db` via their absolute file path
-
         returns `Track`, `Album`, `Playlist`, or `Artist` object
         """
         tc = self.spi.retrieve_track_container(url)
-        tc = self.yti.add_audio(tc)
-        #if result is None: return tc
+        tc = self.yti.add_audio(tc, verbose=verbose)
         self.db.add(tc)
         if verbose: print(tc)
         return tc
 
-    def to_csv(self, single_file=True) -> str|list[str]:
-        return self.db.to_csv(single_file)
+    def to_csv(self) -> str|list[str]:
+        return self.db.to_csv()
     
     def from_csv(self, csv="./data/tracks.csv"):
-        # todo: add ability to move mp3 files to 
-        # new mp3s folder from old one (and update audio_path in db)
         col_names = [
             "track_id", "track_name", "artist_id", "artist_name",
             "album_id", "album_name", "release_date", "image_url",
@@ -62,35 +59,29 @@ class MusicDownloader:
                 video_id=row["video_id"],
                 audio_path=row["audio_path"]
             )
+
+
             self.db._insert_track(track)
+    
 
-    #def mv_mp3s(self, current_directory, current_is_hashed):
-        #def _update_audio_path(track_id, new_path, cursor):
-            #cursor.execute(
-                #"UPDATE audio_tracks SET audio_path = ? WHERE track_id = ?",
-                #(new_path, track_id)
-            #)
+    def to_zip(self):
+        csv_path = self.to_csv()
+        db_filename = os.path.basename(config["music_db"])
 
-        #def _get_all_tracks(cursor):
-            #cursor.execute("SELECT track_id, audio_path FROM audio_tracks")
-            #return cursor.fetchall()
+        source_dir = config["datadir"]
+        dest_zip = config["zip"]()
+        if os.path.exists(dest_zip):
+            os.remove(dest_zip)
+        with zipfile.ZipFile(dest_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for root, dirs, files in os.walk(source_dir):
+                for file in files:
+                    if file == db_filename:
+                        continue
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, source_dir)
+                    zipf.write(file_path, arcname)
 
-        #cursor = self.db.conn.cursor()
-        #tracks = _get_all_tracks(cursor)
-        #new_mp3_dir = config["mp3_storage"]
-
-        #for track_id, old_path in tracks:
-            #if not old_path:
-                #continue
-            #filename = os.path.basename(old_path)
-            #new_path = os.path.join(new_mp3_dir, filename)
-            #if os.path.abspath(old_path) != os.path.abspath(new_path):
-                #if os.path.exists(old_path):
-                    #os.makedirs(os.path.dirname(new_path), exist_ok=True)
-                    #os.rename(old_path, new_path)
-                #_update_audio_path(track_id, new_path, cursor)
-
-        #self.db.conn.commit()
+        print(f"mp3s and track info saved to {os.path.abspath(dest_zip)}")
 
     def close(self):
         self.db.close()
@@ -143,15 +134,10 @@ def read_input():
                             ]))
     parser.add_argument("--export", action="store_true", default=False,
                         help="\n".join([
-                            "save music database to a CSV file for further processing",
+                            "save music to a ZIP file for further processing",
                             "",
                             "musicdl --export",
-                            "tree ./data",
-                            "     ├── mp3s",
-                            "     │   └── 10",
-                            "     │       └── DonToliver_NoIdea_r-nPqWGG6c.mp3",
-                            "     ├── music.db",
-                            "     └── tracks.csv  <--",
+                            f">> mp3s and track info saved to: ./{config["zip"]()}",
                             "", 
                             hline
                             ]))
@@ -170,8 +156,9 @@ def read_input():
     urls = args.urls
     file = args.file
     if args.export:
-        db = MusicDB()
-        db.to_csv()
+        mdl = MusicDownloader()
+        mdl.to_zip()
+        mdl.close()
         exit(0)
     if args.uninstall:
         YoutubeInterface.uninstall_ytdlp()
@@ -194,6 +181,7 @@ def main():
     mdl = MusicDownloader()
     for url in urls:
         mdl.from_url(url, verbose=True)
+    mdl.close()
 
 
 

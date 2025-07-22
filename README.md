@@ -6,7 +6,7 @@ pip3 install -e ./musicdl
 ```
 
 ```bash
-# contents of ./.env (see .env_example for details):
+# create a .env file containing the following:
 SPOTIFY_CLIENT_ID="your client id here"
 SPOTIFY_CLIENT_SECRET="your client secret here"
 ```
@@ -16,7 +16,7 @@ SPOTIFY_CLIENT_SECRET="your client secret here"
 - Follow the [Getting started with Web API](https://developer.spotify.com/documentation/web-api/tutorials/getting-started) guide
     - Make sure that "Web API" is selected
     - Redirect URI: `https://example.com/callback`
-- Add your credentials to a file named `.env` in the directory where `musicdl` is being used
+- Add your credentials to `.env`, located in the directory where `musicdl` is being used
 
 
 # Overview:
@@ -25,11 +25,11 @@ SPOTIFY_CLIENT_SECRET="your client secret here"
 
 ![ER Diagram](er_diagram.png)
 
-2. Use `musicdl --export` to save all tracks to CSV for further processing
+2. Use `musicdl --export` to save all tracks to a ZIP archive for further processing
 
 |track_id|track_name|artist_id|artist_name|album_id|album_name|release_date|image_url|video_id|audio_path|
 |:------:|:--------:|:-------:|:---------:|:------:|:--------:|:----------:|:-------:|:------:|:--------:|
-|7AzlLxHn24DxjgQX73F9fU|No Idea|4Gso3d4CscCijv0lmajZWs|Don Toliver|7z4GhRfLqfSkqrj5F3Yt2B|Heaven Or Hell|2020-03-13|https://i.scdn.co/image/ab67616d0000b27345190a074bef3e8ce868b60c|_r-nPqWGG6c|./data/mp3s/10/DonToliver_NoIdea_r-nPqWGG6c.mp3|
+|7AzlLxHn24DxjgQX73F9fU|No Idea|4Gso3d4CscCijv0lmajZWs|Don Toliver|7z4GhRfLqfSkqrj5F3Yt2B|Heaven Or Hell|2020-03-13|https://i.scdn.co/image/ab67616d0000b27345190a074bef3e8ce868b60c|_r-nPqWGG6c|./mp3s/DonToliver_NoIdea_r-nPqWGG6c.mp3|
 
 3. `musicdl` is usable as both a command line script,
 ```bash
@@ -75,12 +75,11 @@ musicdl -f tracks.txt
         # image_url = https://i.scdn.co/image/ab67616d0000b27345190a074bef3e8ce868b60c
         # release_date = 2020-03-13
         # video_id = _r-nPqWGG6c
-        # audio_path = ./data/mp3s/10/DonToliver_NoIdea_r-nPqWGG6c.mp3
+        # audio_path = ./mp3s/DonToliver_NoIdea_r-nPqWGG6c.mp3
 
 tree ./data
 #    ├── mp3s
-#    │   └── 10
-#    │       └── DonToliver_NoIdea_r-nPqWGG6c.mp3
+#    │   └── DonToliver_NoIdea_r-nPqWGG6c.mp3
 #    ├── music.db
 #    └── tracks.csv
 ```
@@ -121,15 +120,10 @@ options:
                  
 ---------------------------------------------------------
                  
-  --export       save music database to a CSV file for further processing
+  --export       save music database to a ZIP file for further processing
                  
                  musicdl --export
-                 tree ./data
-                      ├── mp3s
-                      │   └── 10
-                      │       └── DonToliver_NoIdea_r-nPqWGG6c.mp3
-                      ├── music.db
-                      └── tracks.csv  <--
+                 >> mp3s and track info saved to: ./tracks-2025-07-22.zip
                  
 ---------------------------------------------------------
                  
@@ -141,6 +135,3 @@ options:
                  
 ---------------------------------------------------------
 ```
-
-todo:
-- add some better logging / output
