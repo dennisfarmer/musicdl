@@ -478,8 +478,8 @@ class MusicDB:
                 t.album_id AS album_id,
                 al.name AS album_name,
                 al.release_date AS release_date,
-                al.image_url AS image_url,
-                af.video_id AS video_id,
+                al.artwork_url AS artwork_url,
+                af.video_id AS youtube_url,
                 af.audio_path AS audio_path
             FROM tracks t
             LEFT JOIN artists ar ON t.artist_id = ar.id
@@ -502,8 +502,7 @@ class MusicDB:
             df["audio_path"] = df["audio_path"].apply(format_for_zip)
 
             # use full url for simplicity during later processing
-            df["youtube_url"] = df["video_id"].apply(lambda v_id: f"https://www.youtube.com/watch?v={v_id}")
-            df = df.drop("video_id")
+            df["youtube_url"] = df["youtube_url"].apply(lambda v_id: f"https://www.youtube.com/watch?v={v_id}")
 
             output_csv = os.path.join(csv_storage, "tracks.csv")
             df.to_csv(output_csv, index=False)
