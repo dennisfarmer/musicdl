@@ -500,6 +500,11 @@ class MusicDB:
 
             df = pd.read_sql_query(query, self.conn)
             df["audio_path"] = df["audio_path"].apply(format_for_zip)
+
+            # use full url for simplicity during later processing
+            df["youtube_url"] = df["video_id"].apply(lambda v_id: f"https://www.youtube.com/watch?v={v_id}")
+            df = df.drop("video_id")
+
             output_csv = os.path.join(csv_storage, "tracks.csv")
             df.to_csv(output_csv, index=False)
             return output_csv

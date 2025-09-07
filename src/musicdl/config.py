@@ -6,16 +6,19 @@ import os
 from dotenv import dotenv_values, find_dotenv
 
 def load_config(dotenv_path: str = None):
+    #name_of_env = ".env"
+    name_of_env = ".musicdl_env"
+
     if dotenv_path is not None and not os.path.exists(dotenv_path):
         dotenv_path = os.path.abspath(dotenv_path)
         warnings.warn(f"Note: {dotenv_path} does not exist")
-        dotenv_path = find_dotenv(filename=".env", usecwd=True)
+        dotenv_path = find_dotenv(filename=name_of_env, usecwd=True)
         if dotenv_path != "":
             warnings.warn(f"using {dotenv_path}")
         else:
             warnings.warn("using enviroment variables")
     elif dotenv_path is None:
-        dotenv_path = find_dotenv(filename=".env", usecwd=True)
+        dotenv_path = find_dotenv(filename=name_of_env, usecwd=True)
     dotenv_path = os.path.abspath(dotenv_path)
     env = dotenv_values(dotenv_path)
 

@@ -6,7 +6,7 @@ pip3 install -e ./musicdl
 ```
 
 ```bash
-# create a .env file containing the following:
+# create a .musicdl_env file containing the following:
 SPOTIFY_CLIENT_ID="your client id here"
 SPOTIFY_CLIENT_SECRET="your client secret here"
 ```
@@ -16,7 +16,7 @@ SPOTIFY_CLIENT_SECRET="your client secret here"
 - Follow the [Getting started with Web API](https://developer.spotify.com/documentation/web-api/tutorials/getting-started) guide
     - Make sure that "Web API" is selected
     - Redirect URI: `https://example.com/callback`
-- Add your credentials to `.env`, located in the directory where `musicdl` is being used
+- Add your credentials to `.musicdl_env`, located in the directory where `musicdl` is being used
 
 
 # Overview:
