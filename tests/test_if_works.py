@@ -1,5 +1,6 @@
 import pandas as pd
 import unittest
+import musicdl
 from musicdl.cli import MusicDownloader
 
 

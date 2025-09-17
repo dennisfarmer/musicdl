@@ -7,6 +7,7 @@ import platform
 import re
 import os
 
+import yt_dlp
 import spotipy
 import requests
 import pandas as pd
@@ -24,6 +25,11 @@ def retrieve_db_audio(cursor: Cursor, track_id: str) -> tuple[str, str] | tuple[
 
 class SpotifyInterface:
     """
+    This is used to create a database of tracks to export as a zip file
+    Retrieves track name/artist/albumart from Spotify and creates
+    "Track Containers" which represent tracks in a format that
+    YoutubeInterfaceCLI can use to lookup the respective youtube_url
+    and download the audio
     ```
     spi = SpotifyInterface()
     url = "https://open.spotify.com/track/7qxURPGc7EXM1G8I1MYuDU?si=eda184d2ee414187"
@@ -32,6 +38,19 @@ class SpotifyInterface:
     ```
     """
     def __init__(self, cursor: Cursor):
+        client_id=config["client_id"],
+        client_secret=config["client_secret"]
+        if client_id is None or client_secret is None or client_id == "" or client_secret == "":
+            print("\n".join([f"Spotify API Credentials not found in environment variables",
+                            "Please provide SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET:",
+                            "##############################################"
+                            "# contents of ./.musicdl_env",
+                            'SPOTIFY_CLIENT_ID="your client id here"',
+                            'SPOTIFY_CLIENT_SECRET="your client secret here"',
+                            "##############################################"
+                            "https://developer.spotify.com/documentation/web-api/tutorials/getting-started"
+                            ]))
+            exit(1)
         self.cursor = cursor
         self._sp = spotipy.Spotify(
             auth_manager=spotipy.oauth2.SpotifyClientCredentials(
@@ -154,8 +173,117 @@ class YoutubeSearchError(requests.exceptions.ConnectionError):
             return f"{self.message}\nSearch query:\n{self.search_query}\nTrack:\n{str(self.track)}"
         return self.message
 
-class YoutubeInterface:
+class YoutubeDownloader:
     """
+    ```
+    ydl = YoutubeDownloader(
+            audio_directory = "./tracks" # where to save audio to
+            audio_format = "wav"         # mp3 or wav
+            )
+
+    tracks_info = ydl.download([
+            "https://www.youtube.com/watch?v=TqxfdNm4gZQ",
+            "https://www.youtube.com/watch?v=WhXgpkQ8E-Q"
+            ])
+    print(tracks_info[0])
+    # {
+    #   'youtube_url': 'https://www.youtube.com/watch?v=TqxfdNm4gZQ'
+    #   'title': 'Brad Mehldau - The Garden'
+    #   'artist': 'Nonesuch Records'
+    #   'artwork_url': 'https://i.ytimg.com/vi/TqxfdNm4gZQ/hqdefault.jpg'
+    #   'audio_path': './tracks/BradMehldauTheGarden.wav'
+    # }
+
+    ydl.set_audio_directory("./tracks2")
+    ydl.set_audio_format("mp3")
+    ```
+    """
+    def __init__(self, audio_directory="./tracks", audio_format="wav"):
+        self.audio_format = ""
+        self.audio_directory = ""
+        self.set_audio_format(audio_format)
+        self.set_audio_directory(audio_directory)
+
+    def set_audio_format(self, audio_format: str):
+        audio_format = audio_format.lower()
+        if audio_format not in ["mp3", "wav"]:
+            raise ValueError(f"Must use either 'mp3' or 'wav' (recieved {audio_format})")
+        self.audio_format=audio_format
+
+    def set_audio_directory(self, audio_directory: str):
+        os.makedirs(audio_directory, exist_ok=True)
+        self.audio_directory = audio_directory
+
+    def get_yt_metadata(youtube_url: str, audio_path: str = "") -> dict:
+        track_info = {}
+        url = f"https://www.youtube.com/oembed?format=json&url={youtube_url}"
+        response = requests.get(url)
+        json_data = response.json()
+        track_info["youtube_url"] = youtube_url
+        track_info["title"] = json_data["title"]
+        track_info["artist"] = json_data["author_name"]
+        track_info["artwork_url"] = json_data["thumbnail_url"]
+        track_info["audio_path"] = audio_path
+        return track_info 
+
+
+    def download(self, url_list: list[str]):
+        """
+        ```
+        ydl = YoutubeDownloader()
+        tracks_info = ydl.download([
+                "https://www.youtube.com/watch?v=TqxfdNm4gZQ",
+                "https://www.youtube.com/watch?v=WhXgpkQ8E-Q"
+                ])
+        print(tracks_info[0])
+        # {
+        #   'youtube_url': 'https://www.youtube.com/watch?v=TqxfdNm4gZQ'
+        #   'title': 'Brad Mehldau - The Garden'
+        #   'artist': 'Nonesuch Records'
+        #   'artwork_url': 'https://i.ytimg.com/vi/TqxfdNm4gZQ/hqdefault.jpg'
+        #   'audio_path': './tracks/BradMehldauTheGarden_NonsuchRecords.wav'
+        # }
+        ```
+        """
+        if not isinstance(url, list):
+            raise ValueError("url_list should be a a list of url strings, ydl.download([url]) for single url")
+
+        create_filename = lambda title, artist: f"{''.join(c for c in title if c.isalnum())}_{''.join(c for c in artist if c.isalnum())}.{self.audio_format}"
+
+        track_infos = []
+        for url in url_list:
+            track_info = self.get_yt_metadata(url)
+            filename =  create_filename(track_info["title"], track_info["artist"])
+            audio_path = os.path.join(self.audio_directory,filename)
+            track_info["audio_path"] = audio_path
+            ydl_opts = {
+                #'cookiefile': 'cookies.txt',         # try using if youtube thinks you're a bot
+                #'outtmpl': f'output_{idx}.%(ext)s',  # idx is an int that is incremented each time
+                'format': 'bestaudio/best',
+                'outtmpl': {"default": audio_path},
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': self.audio_format,
+                }],
+            }
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+
+            track_infos.append(track_info)
+
+        return track_infos
+
+
+class YoutubeDownloaderCLI:
+    """
+    This interface uses the command line version of ytdlp
+
+    The alternative interface (YoutubeDownloader) instead uses the 
+    python version of ytdlp; functionally they're identical but
+    this one is slightly easier to specify arguments for and 
+    is used for downloading using Spotify metadata
+    (searches for the corresponding youtube video url)
     ```
     track = Track(...)
 
@@ -168,13 +296,15 @@ class YoutubeInterface:
     track.audio_path
     ```
     """
-    def __init__(self, cursor: Cursor):
+    def __init__(self, cursor: Cursor, audio_format: str = "mp3"):
         """
         ensures that yt-dlp is installed to user cache directory
 
         yt-dlp can be uninstalled with YoutubeInterface.uninstall_ytdlp()
         """
         self.cursor = cursor
+        self.audio_format = ""
+        self.set_audio_format(audio_format)
         system = platform.system()
         if system == "Darwin":
             binary = "yt-dlp_macos"
@@ -224,6 +354,12 @@ class YoutubeInterface:
             print(f"rmdir {cache_dir}")
         else:
             print(f"Already uninstalled {cache_dir}")
+
+    def set_audio_format(self, audio_format: str):
+        audio_format = audio_format.lower().lstrip(".")
+        if audio_format not in ["mp3", "wav"]:
+            raise ValueError(f"Must use either 'mp3' or 'wav' (recieved {audio_format})")
+        self.audio_format=audio_format
 
     def add_audio(self, tc: TrackContainer, force_replace_existing_download=False, verbose=False) -> TrackContainer|None:
         """
@@ -340,7 +476,7 @@ class YoutubeInterface:
         url = f"https://www.youtube.com/watch?v={video_id}"
 
         if config["hash_mp3_storage"]:
-            output_dir = os.path.join(config["mp3_storage"], YoutubeInterface._hash_id(video_id))
+            output_dir = os.path.join(config["mp3_storage"], YoutubeDownloaderCLI._hash_id(video_id))
         else:
             output_dir = config["mp3_storage"]
         os.makedirs(output_dir, exist_ok=True)
@@ -352,7 +488,7 @@ class YoutubeInterface:
             else:
                 return audio_path
 
-        yt = [self.yt_dlp, '--extract-audio', '--audio-format', 'mp3', '--quiet', '--no-warnings', '--progress', '--output', audio_path, url]
+        yt = [self.yt_dlp, '--extract-audio', '--audio-format', self.audio_format, '--quiet', '--no-warnings', '--progress', '--output', audio_path, url]
         output = subprocess.run(yt, capture_output=False, text=True)
         return audio_path
 

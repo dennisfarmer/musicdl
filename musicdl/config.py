@@ -32,18 +32,8 @@ def load_config(dotenv_path: str = None):
 
         # specify where zip file should be stored (default: tracks_{TODAYSDATE}.zip)
         "zip": env.get("ZIPFILE") or None
-
-        # "hash_mp3_storage": env.get("HASH_MP3_STORAGE") or "False"
-        # "num_bins": env.get("NUM_BINS") or "10"
-        # "single_file": env.get("SINGLE_FILE") or "True"
     }
     client_id, client_secret = config.get("client_id"), config.get("client_secret")
-    if client_id is None or client_secret is None or client_id == "" or client_secret == "":
-        print("\n".join([f"Spotify API Credentials not found in {dotenv_path} or in environment variables",
-                         "Please provide SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET",
-                         "https://developer.spotify.com/documentation/web-api/tutorials/getting-started"
-                         ]))
-        exit(1)
 
     config["music_db"] = os.path.join(config["datadir"], "music.db")
     config["mp3_storage"] = os.path.join(config["datadir"], "mp3s")

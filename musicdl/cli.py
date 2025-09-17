@@ -7,8 +7,8 @@ from argparse import ArgumentParser, RawTextHelpFormatter
 from platformdirs import user_cache_dir
 
 from musicdl import Track, TrackContainer
-from musicdl.app import SpotifyInterface, YoutubeInterface, MusicDB
-from musicdl.config import config
+from .app import SpotifyInterface, YoutubeDownloaderCLI, MusicDB
+from .config import config
 
 class MusicDownloader:
     """
@@ -22,7 +22,7 @@ class MusicDownloader:
     def __init__(self):
         self.db = MusicDB()
         self.spi = SpotifyInterface(self.db.conn.cursor())
-        self.yti = YoutubeInterface(self.db.conn.cursor())
+        self.yti = YoutubeDownloaderCLI(self.db.conn.cursor())
 
     def from_url(self, url: str, verbose=True) -> TrackContainer:
         """
@@ -161,7 +161,7 @@ def read_input():
         mdl.close()
         exit(0)
     if args.uninstall:
-        YoutubeInterface.uninstall_ytdlp()
+        YoutubeDownloaderCLI.uninstall_ytdlp()
         exit(0)
     # combine urls from --file and --urls into single list
     if file is not None:
