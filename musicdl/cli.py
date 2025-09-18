@@ -6,8 +6,10 @@ import argparse
 from argparse import ArgumentParser, RawTextHelpFormatter
 from platformdirs import user_cache_dir
 
-from musicdl import Track, TrackContainer
-from .app import SpotifyInterface, YoutubeDownloaderCLI, MusicDB
+from .containers import Track, TrackContainer
+from .sp import SpotifyInterface
+from .yt import YoutubeDownloader, SPTrackDownloader, uninstall_ytdlpcli
+from .db import MusicDB
 from .config import config
 
 class MusicDownloader:
@@ -19,20 +21,28 @@ class MusicDownloader:
     mdl.close()
     ```
     """
-    def __init__(self):
-        self.db = MusicDB()
-        self.spi = SpotifyInterface(self.db.conn.cursor())
-        self.yti = YoutubeDownloaderCLI(self.db.conn.cursor())
+    def __init__(self, audio_directory = None, audio_format = None, use_db = False):
+        if audio_directory is None:
+            audio_directory = config["datadir"]
+        if audio_format is None:
+            audio_format = "wav"
+        self.use_db = use_db
+        self.db = MusicDB() if use_db else None
+        self.sp = SpotifyInterface()
+        self.yt_cli = SPTrackDownloader(self.db.conn.cursor() if self.db is not None else None)
+        self.yt = YoutubeDownloader(audio_directory=audio_directory, audio_format=audio_format)
 
     def from_url(self, url: str, verbose=True) -> TrackContainer:
         """
-        download YouTube audio using Spotify details at `url`, and save all information in `music.db`
+        download YouTube audio using Spotify details at `url`, 
+        optionally save all information in `music.db`
         
         returns `Track`, `Album`, `Playlist`, or `Artist` object
         """
-        tc = self.spi.retrieve_track_container(url)
-        tc = self.yti.add_audio(tc, verbose=verbose)
-        self.db.add(tc)
+        tc = self.sp.retrieve_track_container(url)
+        tc = self.yt_cli.add_audio(tc, verbose=verbose)
+        if self.use_db: 
+            self.db.add(tc)
         if verbose: print(tc)
         return tc
 
@@ -156,12 +166,12 @@ def read_input():
     urls = args.urls
     file = args.file
     if args.export:
-        mdl = MusicDownloader()
+        mdl = MusicDownloader(use_db=True)
         mdl.to_zip()
         mdl.close()
         exit(0)
     if args.uninstall:
-        YoutubeDownloaderCLI.uninstall_ytdlp()
+        uninstall_ytdlpcli()
         exit(0)
     # combine urls from --file and --urls into single list
     if file is not None:
@@ -178,7 +188,7 @@ def read_input():
 
 def main():
     urls = read_input()
-    mdl = MusicDownloader()
+    mdl = MusicDownloader(use_db=True)
     for url in urls:
         mdl.from_url(url, verbose=True)
     mdl.close()

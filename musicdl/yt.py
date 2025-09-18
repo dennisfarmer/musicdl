@@ -1,0 +1,403 @@
+from sqlite3 import Cursor
+from copy import deepcopy as copy
+from urllib.parse import quote
+import urllib.request
+import subprocess
+import platform
+from pathlib import Path
+import re
+import os
+
+
+from platformdirs import user_cache_dir
+import requests
+import yt_dlp
+
+
+from .containers import Track, Playlist, Album, Artist, TrackContainer
+from .config import config
+
+
+def ytdlp_wrapper(url: str, download_path: str):
+    """
+    `download_path: ./tracks/song.wav`
+
+    Download mp3 or wav from `url` to `download_path`
+    """
+    root, extension = os.path.splitext(download_path)
+    extension = extension.lstrip(".")
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': root,
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': extension,
+        }],
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+
+def get_yt_metadata(youtube_url: str, audio_path: str = "") -> dict:
+    track_info = {}
+    url = f"https://www.youtube.com/oembed?format=json&url={youtube_url}"
+    response = requests.get(url)
+    json_data = response.json()
+    track_info["youtube_url"] = youtube_url
+    track_info["title"] = json_data["title"]
+    track_info["artist"] = json_data["author_name"]
+    track_info["artwork_url"] = json_data["thumbnail_url"]
+    track_info["audio_path"] = audio_path
+    return track_info 
+
+
+class YoutubeDownloader:
+    """
+    ```
+    ydl = YoutubeDownloader(
+            audio_directory = "./tracks" # where to save audio to
+            audio_format = "wav"         # mp3 or wav
+            )
+
+    tracks_info = ydl.download([
+            "https://www.youtube.com/watch?v=TqxfdNm4gZQ",
+            "https://www.youtube.com/watch?v=WhXgpkQ8E-Q"
+            ])
+    print(tracks_info[0])
+    # {
+    #   'youtube_url': 'https://www.youtube.com/watch?v=TqxfdNm4gZQ'
+    #   'title': 'Brad Mehldau - The Garden'
+    #   'artist': 'Nonesuch Records'
+    #   'artwork_url': 'https://i.ytimg.com/vi/TqxfdNm4gZQ/hqdefault.jpg'
+    #   'audio_path': './tracks/BradMehldauTheGarden_NonsuchRecords.wav'
+    # }
+
+    ydl.set_audio_directory("./tracks2")
+    ydl.set_audio_format("mp3")
+    ```
+    """
+    def __init__(self, audio_directory=".", audio_format="wav"):
+        self.audio_format = ""
+        self.audio_directory = ""
+        self.set_audio_format(audio_format)
+        self.set_audio_directory(audio_directory)
+
+    def set_audio_format(self, audio_format: str):
+        audio_format = audio_format.lower().lstrip(".")
+        if audio_format not in ["mp3", "wav"]:
+            raise ValueError(f"Must use either 'mp3' or 'wav' (recieved {audio_format})")
+        self.audio_format=audio_format
+
+    def set_audio_directory(self, audio_directory: str):
+        os.makedirs(audio_directory, exist_ok=True)
+        self.audio_directory = audio_directory
+
+    def download(self, url_list: list[str], filename_list: list[str]|None = None):
+        """
+        ```
+        ydl = YoutubeDownloader()
+        tracks_info = ydl.download([
+                "https://www.youtube.com/watch?v=TqxfdNm4gZQ",
+                "https://www.youtube.com/watch?v=WhXgpkQ8E-Q"
+                ])
+        print(tracks_info[0])
+        # {
+        #   'youtube_url': 'https://www.youtube.com/watch?v=TqxfdNm4gZQ'
+        #   'title': 'Brad Mehldau - The Garden'
+        #   'artist': 'Nonesuch Records'
+        #   'artwork_url': 'https://i.ytimg.com/vi/TqxfdNm4gZQ/hqdefault.jpg'
+        #   'audio_path': './tracks/BradMehldauTheGarden_NonsuchRecords.wav'
+        # }
+        ```
+        """
+        if not isinstance(url_list, list):
+            raise ValueError("url_list should be a a list of url strings, ydl.download([url]) for single url")
+
+        create_filename = lambda title, artist: f"{''.join(c for c in title if c.isalnum())}_{''.join(c for c in artist if c.isalnum())}.{self.audio_format}"
+
+        track_infos = []
+        for i, url in enumerate(url_list):
+            track_info = get_yt_metadata(url)
+            if filename_list is not None:
+                filename = filename_list[i]
+            else:
+                filename =  create_filename(track_info["title"], track_info["artist"], self.audio_format)
+            audio_path = os.path.join(self.audio_directory,filename)
+
+            ytdlp_wrapper(url, audio_path)
+            track_info["audio_path"] = audio_path
+            track_infos.append(track_info)
+
+        return track_infos
+
+
+
+
+####################################################################
+# Below is code that is used by the main program to search for and 
+# download tracks based on their Spotify metadata obtained via API
+####################################################################
+
+def retrieve_db_audio(cursor: Cursor = None, track_id: str = "0") -> tuple[str, str] | tuple[None, None]:
+    if cursor is None: 
+        return None, None
+    cursor.execute("SELECT video_id, audio_path FROM audio_files WHERE track_id = ?", (track_id,))
+    result = cursor.fetchone()
+    if result:
+        return result  # (video_id, audio_path)
+    return None, None
+
+class YoutubeSearchError(requests.exceptions.ConnectionError):
+    """Exception raised when a YouTube search fails to return a valid video ID."""
+    def __init__(self, message="Invalid YouTube search result. No video ID found.", search_query=None, track=None):
+        self.message = message
+        message = message + '\nvideo ID of the form "videoId":"MI_XU1iKRRc" not found in youtube request response'
+        self.search_query = search_query
+        self.track = track
+        super().__init__(self.message)
+
+    def __str__(self):
+        if self.search_query:
+            return f"{self.message}\nSearch query:\n{self.search_query}\nTrack:\n{str(self.track)}"
+        return self.message
+
+def ytdlpcli_wrapper(url: str, download_path: str):
+    """
+    `download_path: ./tracks/song.wav`
+
+    Download mp3 or wav from `url` to `download_path`
+    """
+    root, audio_format = os.path.splitext(download_path)
+    audio_format = audio_format.lstrip(".")
+    yt_dlp_cmd = install_ytdlpcli()
+    yt = [yt_dlp_cmd, '--extract-audio', '--audio-format', audio_format, '--quiet', '--no-warnings', '--progress', '--output', download_path, url]
+    output = subprocess.run(yt, capture_output=False, text=True)
+
+def install_ytdlpcli() -> str:
+    """
+    returns the location of the yt-dlp cli (platform dependent)
+
+    ensures that yt-dlp is installed to user cache directory
+
+    if ytdlp isn't installed, this installs it from the github latest release
+
+    yt-dlp can be uninstalled with uninstall_ytdlpcli()
+    """
+    system = platform.system()
+    if system == "Darwin":
+        binary = "yt-dlp_macos"
+    elif system == "Linux":
+        binary = "yt-dlp"
+    elif system == "Windows":
+        binary = "yt-dlp.exe"
+    else:
+        raise RuntimeError(f"Unsupported platform: {system}")
+
+    cache_dir = user_cache_dir("musicdl")
+    os.makedirs(cache_dir, exist_ok=True)
+    binary_path = os.path.join(cache_dir, binary)
+    if not os.path.exists(binary_path):
+        print(f"Downloading {binary} to {binary_path}...")
+        try:
+            urllib.request.urlretrieve(
+                f"https://github.com/yt-dlp/yt-dlp/releases/latest/download/{binary}",
+                binary_path
+            )
+        except urllib.error.URLError as e:
+            #print(str(e))
+            print("[Errno -3] Temporary failure in name resolution")
+            print("Check to see if you have a reliable internet connection")
+            exit(1)
+        print("✅ download successful")
+        os.chmod(binary_path, 0o755)
+    return os.path.abspath(binary_path)
+
+def uninstall_ytdlpcli():
+    system = platform.system()
+    if system == "Darwin":
+        binary = "yt-dlp_macos"
+    elif system == "Linux":
+        binary = "yt-dlp"
+    elif system == "Windows":
+        binary = "yt-dlp.exe"
+    else:
+        raise RuntimeError(f"Unsupported platform: {system}")
+    cache_dir = os.path.abspath(user_cache_dir("musicdl"))
+    binary_path = os.path.abspath(os.path.join(cache_dir, binary))
+    if os.path.exists(binary_path):
+        os.remove(binary_path)
+        os.rmdir(cache_dir)
+        print(f"rm {binary_path}")
+        print(f"rmdir {cache_dir}")
+    else:
+        print(f"Already uninstalled {cache_dir}")
+
+class SPTrackDownloader:
+    """
+    This interface uses the command line version of ytdlp
+
+    The alternative interface (YoutubeDownloader) instead uses the 
+    python version of ytdlp; functionally they're identical but
+    this one is slightly easier to specify arguments for and 
+    is used for downloading using Spotify metadata
+    (searches for the corresponding youtube video url)
+    ```
+    track = Track(...)
+
+    yti = YouTubeInterface()
+    yti.add_audio(track)
+
+    # youtube video id
+    track.video_id
+    # path to downloaded mp3
+    track.audio_path
+    ```
+    """
+    def __init__(self, cursor: Cursor, audio_format: str = "mp3", ytdlp_version: str = "py"):
+        """
+        ytdlp_version: either 'py' or 'cli'
+                - py uses the yt-dlp python package
+                - cli uses the cli version from github (autoinstalls)
+        """
+        self.cursor = cursor
+        self.audio_format = ""
+        self.set_audio_format(audio_format)
+
+
+    def set_audio_format(self, audio_format: str):
+        audio_format = audio_format.lower().lstrip(".")
+        if audio_format not in ["mp3", "wav"]:
+            raise ValueError(f"Must use either 'mp3' or 'wav' (recieved {audio_format})")
+        self.audio_format=audio_format
+
+    def add_audio(self, tc: TrackContainer, force_replace_existing_download=False, verbose=False) -> TrackContainer|None:
+        """
+        adds audio mp3(s) to a TrackContainer
+        """
+        assert isinstance(tc, TrackContainer)
+        if isinstance(tc, Track):
+            video_id, audio_path = retrieve_db_audio(self.cursor, tc.id)
+            if video_id is None:
+                return self._add_audio_to_track(tc, force_replace_existing_download, verbose)
+            else:
+                tc.video_id = video_id
+                tc.audio_path = audio_path
+                return tc
+        tc = copy(tc)
+        if isinstance(tc, Album) or isinstance(tc, Playlist):
+            for track_id, track in tc.tracks.items():
+                tc.tracks[track_id] = self._add_audio_to_track(track, force_replace_existing_download, verbose)
+        elif isinstance(tc, Artist):
+            for album_id, album in tc.albums.items():
+                tc.albums[album_id] = self.add_audio(album, force_replace_existing_download, verbose)
+        return tc
+
+    def _add_audio_to_track(self, track: Track, force=False, verbose=False) -> Track:
+        """
+        adds audio mp3 to track (video_id and audio_path)
+        """
+        track = copy(track)
+        video_id, audio_path = retrieve_db_audio(self.cursor, track.id)
+        if video_id is None or force:
+            video_id = self._search(track)
+            audio_path = self._download(track, video_id, force=force)
+            if verbose: print(f'Audio added to "{track.name}"')
+        else:
+            if verbose: print(f'"{track.name}" already exists in database')
+        track.video_id = video_id
+        track.audio_path = audio_path
+        return track
+
+
+    def _search(self, track: Track) -> str:
+        """
+        obtain youtube video id by searching youtube.com and retrieving the first search result
+
+        returns the video id
+        """
+        search_query = f"{track.name} by {track.artist_name} official audio".replace("+", "%2B").replace(" ", "+").replace('"', "%22")
+        search_query = quote(search_query, safe="+")
+
+        search_url = "https://www.youtube.com/results?search_query=" + search_query
+
+        request = requests.get(search_url)
+        if request.status_code != 200:
+            print(request.status_code)
+            print(request.headers)
+            print(request.reason)
+            raise YoutubeSearchError(search_query=search_url)
+        html_content = request.text
+
+        match = re.search(r'"videoId":"(.*?)"', html_content)
+        if match:
+            video_id = match.group(1)
+            return video_id
+        else:
+            #print("todo: implement YouTube Data API call as alternative (rate limited to 100 searches / day)")
+            #print(track.name, track.artist)
+            raise YoutubeSearchError(search_query=search_url, track=track)
+
+    @staticmethod
+    def _hash_id(video_id: str) -> str:
+        """
+        generate hash for splitting downloaded mp3 into seperate folders,
+        based on the youtube video id
+        
+        this is done for file system access reasons; individual folders 
+        with many files are difficult for most file managers to work with
+        """
+        num_bins = int(config["num_bins"])
+        hash_value = sum(ord(char) for char in video_id) % num_bins + 1
+        if num_bins == 1:
+            return "."
+        elif num_bins > 0 and num_bins <= 10:
+            return f"{hash_value:02}"
+        elif num_bins <= 100:
+            return f"{hash_value:03}"
+        else:
+            raise ValueError("num_bins should be in the interval [1,100]")
+
+    #def add_missing_video_ids(self, tracks: list[Track], max_calls: int|None = 5) -> list[dict]:
+        #if max_calls is None:
+            #max_calls = len(tracks)
+        #num_calls = 0
+        #new_tracks = []
+        #for track in tracks:
+            #if track.video_id is None and (num_calls < max_calls):
+                #num_calls += 1
+                #try:
+                    #video_id = self.search_yt_for_video_id(track)
+                    ##video_id = "sq8GBPUb3rk"
+                #except requests.exceptions.ConnectionError:
+                    #video_id = None
+                #track.video_id = video_id
+            #new_tracks.append(track)
+        #return new_tracks
+
+    def _download(self, track: Track, video_id: str, force=False) -> str:
+        """
+        use yt-dlp to download the youtube audio stream and save to file
+
+        returns the path to the audio file
+        """
+        artist_name = track.artist_name
+        track_name = track.name
+        url = f"https://www.youtube.com/watch?v={video_id}"
+
+        if config["hash_mp3_storage"]:
+            output_dir = os.path.join(config["mp3_storage"], SPTrackDownloader._hash_id(video_id))
+        else:
+            output_dir = config["mp3_storage"]
+        os.makedirs(output_dir, exist_ok=True)
+
+        audio_path = os.path.join(output_dir, f"{''.join(c for c in artist_name if c.isalnum())}_{''.join(c for c in track_name if c.isalnum())}_{video_id}.mp3")
+        if os.path.exists(audio_path):
+            if force:
+                os.remove(audio_path)
+            else:
+                return audio_path
+
+        #ytdlpcli_wrapper(url, audio_path)
+        ytdlp_wrapper(url, audio_path)
+        return audio_path

@@ -28,7 +28,7 @@ def load_config(dotenv_path: str = None):
         "client_secret": env.get("SPOTIFY_CLIENT_SECRET") or os.getenv("SPOTIFY_CLIENT_SECRET"),
 
         # specify the directory where data should be stored prior to creating zip file
-        "datadir": env.get("DATADIR") or "./data",
+        "datadir": env.get("DATADIR") or "./tracks",
 
         # specify where zip file should be stored (default: tracks_{TODAYSDATE}.zip)
         "zip": env.get("ZIPFILE") or None
