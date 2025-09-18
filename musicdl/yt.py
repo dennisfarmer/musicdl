@@ -28,6 +28,7 @@ def ytdlp_wrapper(url: str, download_path: str):
     extension = extension.lstrip(".")
     ydl_opts = {
         'format': 'bestaudio/best',
+        'quiet': True,
         'outtmpl': root,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
