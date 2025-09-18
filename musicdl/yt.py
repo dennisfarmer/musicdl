@@ -95,6 +95,10 @@ class YoutubeDownloader:
 
     def download(self, url_list: list[str], filename_list: list[str]|None = None):
         """
+        url_list is a list of youtube urls, and optionally filename_list
+        is a list of the same length specifying the respecive filenames with
+        their extension. Default behavior is to use the video title and uploader
+        as the filename.
         ```
         ydl = YoutubeDownloader()
         tracks_info = ydl.download([
