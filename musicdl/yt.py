@@ -114,7 +114,7 @@ class YoutubeDownloader:
         if not isinstance(url_list, list):
             raise ValueError("url_list should be a a list of url strings, ydl.download([url]) for single url")
 
-        create_filename = lambda title, artist: f"{''.join(c for c in title if c.isalnum())}_{''.join(c for c in artist if c.isalnum())}.{self.audio_format}"
+        create_filename = lambda title, artist, audio_format: f"{''.join(c for c in title if c.isalnum())}_{''.join(c for c in artist if c.isalnum())}.{audio_format}"
 
         track_infos = []
         for i, url in enumerate(url_list):
