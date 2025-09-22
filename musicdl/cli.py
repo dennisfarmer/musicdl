@@ -147,7 +147,7 @@ def read_input():
                             "save music to a ZIP file for further processing",
                             "",
                             "musicdl --export",
-                            f">> mp3s and track info saved to: ./{config["zip"]()}",
+                            f">> mp3s and track info saved to: ./{config['zip']()}",
                             "", 
                             hline
                             ]))
