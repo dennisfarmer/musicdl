@@ -12,6 +12,7 @@ import os
 from platformdirs import user_cache_dir
 import requests
 import yt_dlp
+import ffmpeg
 
 
 from .containers import Track, Playlist, Album, Artist, TrackContainer
@@ -26,6 +27,7 @@ def ytdlp_wrapper(url: str, download_path: str):
     """
     root, extension = os.path.splitext(download_path)
     extension = extension.lstrip(".")
+    ffmpeg.init()
     ydl_opts = {
         'format': 'bestaudio/best',
         'quiet': True,
@@ -34,6 +36,7 @@ def ytdlp_wrapper(url: str, download_path: str):
             'key': 'FFmpegExtractAudio',
             'preferredcodec': extension,
         }],
+        'ffmpeg_location': str(ffmpeg.FFMPEG_PATH),
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
