@@ -28,7 +28,7 @@ class MusicDownloader:
 
     `use_ytdlp_cli = True`: Optional download yt-dlp from github, seems less prone to 403 Forbidden errors (installs to user cache)
     """
-    def __init__(self, audio_directory = None, audio_format = "flac", use_db = False, use_ytdlp_cli = False):
+    def __init__(self, audio_directory = "./tracks", audio_format = "flac", use_db = False, use_ytdlp_cli = False):
         if audio_directory is None:
             audio_directory = config["datadir"]
         self.audio_directory = audio_directory

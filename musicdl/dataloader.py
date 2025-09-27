@@ -81,10 +81,15 @@ def create_zip(zip_file: str = "./tracks.zip", audio_directory: str = "./tracks"
 def load(audio_directory: str = "./tracks"):
     """
     Retrieves list of track_info dictionaries from given `audio_directory`.
+
+    Converts `audio_path` of each track to a relative path, based on `audio_directory`:
+
+    if `load(audio_directory="./tracks")` then `./audio/track.flac -> tracks/audio/track.flac`
     """
     tracks_csv = pathlib.Path(audio_directory)/"tracks.csv"
     with open(tracks_csv, "r") as f:
         tracks_df = pd.read_csv(f)
+        # set audio_path to a relative path originating from current directory
+        tracks_df["audio_path"] = tracks_df["audio_path"].apply(lambda x: str(pathlib.Path(audio_directory)/x))
         tracks_info = list(tracks_df.to_dict(orient="records"))
-    # TODO: make sure filepaths work (convert to absolute paths?)
     return tracks_info

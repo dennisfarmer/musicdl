@@ -17,7 +17,7 @@ import yt_dlp
 import ffmpeg
 
 
-from .containers import Track, Playlist, Album, Artist, TrackContainer, update_csv
+from .containers import Track, Playlist, Album, Artist, TrackContainer, update_csv, format_for_zip
 from .config import config
 
 #cookies = io.StringIO(
@@ -63,7 +63,7 @@ def ytdlp_wrapper(url: str, download_path: str):
         ydl.download([url])
 
 
-def get_yt_metadata(youtube_url: str, audio_path: str = "") -> dict:
+def to_track_info(youtube_url: str, audio_path: str = "") -> dict:
     track_info = {}
     url = f"https://www.youtube.com/oembed?format=json&url={youtube_url}"
     response = requests.get(url)
@@ -74,7 +74,6 @@ def get_yt_metadata(youtube_url: str, audio_path: str = "") -> dict:
     track_info["artwork_url"] = json_data["thumbnail_url"]
     track_info["audio_path"] = audio_path
     return track_info 
-
 
 class YoutubeDownloader:
     """
@@ -147,7 +146,7 @@ class YoutubeDownloader:
 
         tracks_info = []
         for i, url in enumerate(url_list):
-            track_info = get_yt_metadata(url)
+            track_info = to_track_info(url)
             if filename_list is not None:
                 filename = filename_list[i]
             else:
@@ -157,7 +156,7 @@ class YoutubeDownloader:
             try:
                 time.sleep(2)
                 self.ytdlp(url, audio_path)
-                track_info["audio_path"] = audio_path
+                track_info["audio_path"] = format_for_zip(audio_path)
                 tracks_info.append(track_info)
             except yt_dlp.utils.DownloadError:
                 tracks_info.append({k: "" for k in ["youtube_url", "title", "artist", "artwork_url", "audio_path"]})
