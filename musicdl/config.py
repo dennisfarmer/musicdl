@@ -36,9 +36,8 @@ def load_config(dotenv_path: str = None):
     client_id, client_secret = config.get("client_id"), config.get("client_secret")
 
     config["music_db"] = os.path.join(config["datadir"], "music.db")
-    config["mp3_storage"] = os.path.join(config["datadir"], "mp3s")
-    config["csv_storage"] = config["datadir"]
-    config["single_file"] = True
+    config["audio_storage"] = os.path.join(config["datadir"], "audio")
+    #config["single_file"] = True
 
     # make the zip file path a callable so that we have the correct date when exporting
     if config["zip"] is None:
@@ -54,7 +53,7 @@ def load_config(dotenv_path: str = None):
     # NOTE: utilize the following config options if you find yourself 
     #       wanting to download a massive number of mp3 files
 
-    config["hash_mp3_storage"] = False
+    config["hash_audio_storage"] = False
     config["num_bins"] = 10   # [1,100]
 
     ###################################################################

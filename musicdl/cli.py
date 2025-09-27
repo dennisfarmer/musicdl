@@ -1,12 +1,14 @@
 import os
+import re
 import zipfile
 
 import pandas as pd
 import argparse
 from argparse import ArgumentParser, RawTextHelpFormatter
 from platformdirs import user_cache_dir
+from tqdm import tqdm
 
-from .containers import Track, TrackContainer
+from .containers import Track, TrackContainer, update_csv
 from .sp import SpotifyInterface
 from .yt import YoutubeDownloader, SPTrackDownloader, uninstall_ytdlpcli
 from .db import MusicDB
@@ -17,62 +19,84 @@ class MusicDownloader:
     ```
     mdl = MusicDownloader()
     track_url = "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU"
-    track = mdl.from_url(track_url)
-    mdl.close()
+    track = mdl.download(track_url)
     ```
+    `use_db = True`: optionally save all information in `music.db` using SQLite if `use_db` is True, for keeping a structured database of songs.
+    
+    `use_ytdlp_cli = False`: (default) use Python version of yt-dlp, with static version of ffmpeg installed via pip 
+
+    `use_ytdlp_cli = True`: Optional download yt-dlp from github, seems less prone to 403 Forbidden errors (installs to user cache)
     """
-    def __init__(self, audio_directory = None, audio_format = None, use_db = False):
+    def __init__(self, audio_directory = None, audio_format = None, use_db = False, use_ytdlp_cli = False):
         if audio_directory is None:
             audio_directory = config["datadir"]
         if audio_format is None:
             audio_format = "wav"
+        self.audio_directory = audio_directory
+        self.audio_format = audio_format
         self.use_db = use_db
         self.db = MusicDB() if use_db else None
         self.sp = SpotifyInterface()
-        self.yt_cli = SPTrackDownloader(self.db.conn.cursor() if self.db is not None else None)
-        self.yt = YoutubeDownloader(audio_directory=audio_directory, audio_format=audio_format)
+        self.yt_cli = SPTrackDownloader(
+            self.db.conn.cursor() if self.db is not None else None, 
+            audio_format=audio_format, ytdlp_version="cli" if use_ytdlp_cli else "py")
+        self.yt = YoutubeDownloader(audio_directory=audio_directory, audio_format=audio_format, 
+                                    use_ytdlp_cli=use_ytdlp_cli)
 
-    def from_url(self, url: str, verbose=True) -> TrackContainer:
+    def download(self, urls: list[str], verbose=True) -> list[dict]:
         """
-        download YouTube audio using Spotify details at `url`, 
-        optionally save all information in `music.db`
+        download YouTube audio using Spotify details at each url in `urls`, 
         
         returns `Track`, `Album`, `Playlist`, or `Artist` object
         """
-        tc = self.sp.retrieve_track_container(url)
-        tc = self.yt_cli.add_audio(tc, verbose=verbose)
-        if self.use_db: 
-            self.db.add(tc)
-        if verbose: print(tc)
-        return tc
+        output_list = []
+        for url in tqdm(urls, desc="Downloading from urls"):
+            if "spotify" in url:
+                tc = self.sp.retrieve_track_container(url)
+                tc = self.yt_cli.add_audio(tc, verbose=verbose)
+                if self.use_db: 
+                    self.db.add(tc)
+                if verbose: 
+                    print(tc)
+                tracks_info = tc.to_list()
+            else:
+                if "&list=" in url:
+                    print(url)
+                    print("musicdl does not currently support youtube playlists")
+                    print("converted to single url (removing &list=...)")
+                    url = re.match("^(.*)&list=", url).group(1)
+                tracks_info = self.yt.download([url])
+                # note: does not store youtube urls into db
+                #       use spotify urls to get pretty album art
+                # note: update_csv runs in yt.download()
 
-    def to_csv(self) -> str|list[str]:
-        return self.db.to_csv()
-    
-    def from_csv(self, csv="./data/tracks.csv"):
-        col_names = [
-            "track_id", "track_name", "artist_id", "artist_name",
-            "album_id", "album_name", "release_date", "image_url",
-            "video_id", "audio_path"
-        ]
-        df = pd.read_csv(csv, names=col_names, header=0)
-        for _, row in df.iterrows():
-            track = Track(
-                track_id=row["track_id"],
-                name=row["track_name"],
-                artist_id=row["artist_id"],
-                artist_name=row["artist_name"],
-                album_id=row["album_id"],
-                album_name=row["album_name"],
-                image_url=row["image_url"],
-                release_date=row["release_date"],
-                video_id=row["video_id"],
-                audio_path=row["audio_path"]
-            )
+            update_csv(os.path.join(self.audio_directory, "tracks.csv"), tracks_info)
+            output_list.extend(tracks_info)
+        return output_list
 
+    def to_csv(self, tracks_info: list[dict] = None) -> str|list[str]:
+        """
+        save info about tracks in `tracks_info` to a csv file
 
-            self.db._insert_track(track)
-    
+        if csv already exists, this updates it by appending tracks
+        in `tracks_info` to it
+        """
+        if self.use_db:
+            return self.db.to_csv()
+        else:
+            tracks_info_csv = os.path.join(self.audio_directory, "tracks.csv")
+            if os.path.exists(tracks_info_csv):
+                orig_df = pd.read_csv(tracks_info_csv)
+                new_df = pd.DataFrame(tracks_info)
+                combined_df = pd.concat([orig_df, new_df], ignore_index=True)
+                combined_df = combined_df.drop_duplicates(subset=["youtube_url"])
+                os.remove(tracks_info_csv)
+                combined_df.to_csv(tracks_info_csv, index=False)
+            else:
+                os.remove(tracks_info_csv)
+                new_df = pd.DataFrame(tracks_info)
+                new_df.to_csv(tracks_info_csv, index=False)
+            return tracks_info_csv
 
     def to_zip(self):
         csv_path = self.to_csv()
@@ -91,10 +115,14 @@ class MusicDownloader:
                     arcname = os.path.relpath(file_path, source_dir)
                     zipf.write(file_path, arcname)
 
-        print(f"mp3s and track info saved to {os.path.abspath(dest_zip)}")
+        print(f"audios and track info saved to {os.path.abspath(dest_zip)}")
 
     def close(self):
-        self.db.close()
+        if self.use_db:
+            self.db.close()
+    
+    def __del__(self):
+        self.close()
 
 def read_input():
     """
@@ -121,7 +149,7 @@ def read_input():
 
     parser.add_argument("-u", dest="urls", nargs="*", default=None, 
                         help="\n".join([
-                            "download mp3s using one or more Spotify urls",
+                            "download audios using one or more Spotify urls",
                             "",
                             "musicdl -u \\",
                                 '  "https://open.spotify.com/album/2YuS718NZa9vTJk9eoyD9B" \\',
@@ -131,7 +159,7 @@ def read_input():
                         ]))
     parser.add_argument("-f", dest="file", nargs="?", default=None, type=str,
                         help="\n".join([
-                            "download mp3s using a text file containing Spotify urls",
+                            "download audio using a text file containing Spotify urls",
                             "",
                             "cat << EOF > example.txt",
                             '"https://open.spotify.com/artist/4A8byZgEqs8YRqUQ2HMmhA"',
@@ -147,7 +175,7 @@ def read_input():
                             "save music to a ZIP file for further processing",
                             "",
                             "musicdl --export",
-                            f">> mp3s and track info saved to: ./{config['zip']()}",
+                            f">> audios and track info saved to: ./{config['zip']()}",
                             "", 
                             hline
                             ]))
@@ -189,19 +217,5 @@ def read_input():
 def main():
     urls = read_input()
     mdl = MusicDownloader(use_db=True)
-    for url in urls:
-        mdl.from_url(url, verbose=True)
+    mdl.download(urls, verbose=True)
     mdl.close()
-
-
-
-
-
-
-
-
-
-
-
-
-

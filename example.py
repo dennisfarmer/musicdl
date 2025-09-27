@@ -1,37 +1,56 @@
+from musicdl.dataloader import *
 from musicdl.yt import YoutubeDownloader
+from musicdl import MusicDownloader
+import pandas as pd
+from pathlib import Path
 
 def download_audio():
     ydl = YoutubeDownloader(audio_directory="./tracks", audio_format="wav")
 
     youtube_urls = [
-        "https://www.youtube.com/watch?v=TqxfdNm4gZQ",
-        "https://www.youtube.com/watch?v=MI_XU1iKRRc"
+        #"https://www.youtube.com/watch?v=TqxfdNm4gZQ",
+        #"https://www.youtube.com/watch?v=MI_XU1iKRRc"
     ]
 
     tracks_info = ydl.download(youtube_urls)
-
-    print(tracks_info)
-
+    # print(tracks_info)
     #[
         #{
             #'youtube_url': 'https://www.youtube.com/watch?v=TqxfdNm4gZQ', 
             #'title': 'Brad Mehldau - The Garden', 
             #'artist': 'Nonesuch Records', 
             #'artwork_url': 'https://i.ytimg.com/vi/TqxfdNm4gZQ/hqdefault.jpg', 
-            #'audio_path': './tracks/BradMehldauTheGarden_NonesuchRecords.wav'
+            #'audio_path': './audio/BradMehldauTheGarden_NonesuchRecords.wav'
         #}, 
         #{
             #'youtube_url': 'https://www.youtube.com/watch?v=MI_XU1iKRRc', 
             #'title': 'King Gizzard and the Lizard Wizard - The River (Live on KEXP)', 
             #'artist': 'KEXP', 
             #'artwork_url': 'https://i.ytimg.com/vi/MI_XU1iKRRc/hqdefault.jpg', 
-            #'audio_path': './tracks/KingGizzardandtheLizardWizardTheRiverLiveonKEXP_KEXP.wav'
+            #'audio_path': './audio/sKingGizzardandtheLizardWizardTheRiverLiveonKEXP_KEXP.wav'
         #}
     #]
 
-def import_zip():
-    pass
+    return tracks_info
+
+urls_hello_meteor = [
+        "https://www.youtube.com/watch?v=5K6fO9Bdlgg",
+        "https://www.youtube.com/watch?v=CI2Oa1Ds6Z8",
+        "https://www.youtube.com/watch?v=iVzXMytwCCo",
+        "https://www.youtube.com/watch?v=THV2TDARpS0",
+        "https://www.youtube.com/watch?v=MXtQ5I0asKg"
+]
 
 if __name__ == "__main__":
-    download_audio()
-    import_zip()
+    mdl = MusicDownloader(use_ytdlp_cli = True)
+    youtube_urls = [
+        "https://www.youtube.com/watch?v=MI_XU1iKRRc",
+        "https://open.spotify.com/album/0ESBFn4IKNcvgD53QJPlpD?si=PNFoDMvHTi6IaT6ia-s1Jw",
+    ]
+
+    tracks_info = mdl.download(youtube_urls)
+
+
+    #tracks_info = download_audio()
+    #tracks_df = pd.DataFrame(tracks_info)
+    #tracks_df.to_csv("./tracks/tracks.csv")

@@ -15,7 +15,7 @@ class TestCli(unittest.TestCase):
 
         mdl = MusicDownloader()
         mdl.db.reset_database()
-        track = mdl.from_url("https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00", verbose=False)
+        track = mdl.download("https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU?si=0684264878094a00", verbose=False)
         self.assertEqual(track.name, "No Idea")
         self.assertEqual(track.artist_name, "Don Toliver")
 

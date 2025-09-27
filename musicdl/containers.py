@@ -1,4 +1,45 @@
+import os
+
 import abc
+
+import pandas as pd
+
+# this is what is contained in track_info dictionaries
+# tracks_info: list of track_info dictionaries
+#class TrackInfo:
+    #def __init__(self, youtube_url, title, artist, artwork_url, filename, duration_s):
+        #self.youtube_url = youtube_url
+        #self.title = title
+        #self.artist = artist
+        #self.artwork_url = artwork_url
+        #self.filename = filename
+        #self.duration_s = duration_s
+
+def format_for_zip(filepath: str):
+    filepath = os.path.abspath(filepath)
+    parts = filepath.split(os.sep)
+    if "audio" in parts:
+        #audio_index = parts.index("audio")
+        audio_index = max(i for i, v in enumerate(parts) if v=="audio")
+        # Reconstruct the path as ./audio/SONG.wav
+        return os.path.join(".", *parts[audio_index:],)
+    else:
+        # likely doesn't ever run
+        return os.path.join("./audio", os.path.basename(filepath))
+
+def update_csv(orig_tracks_csv: str, new_tracks_info: list[dict]):
+    if os.path.exists(orig_tracks_csv):
+        orig_df = pd.read_csv(orig_tracks_csv)
+        if isinstance(new_tracks_info, dict):
+            new_tracks_info = [new_tracks_info]
+        new_df = pd.DataFrame(new_tracks_info)
+        combined_df = pd.concat([orig_df, new_df], ignore_index=True)
+        combined_df = combined_df.drop_duplicates(subset=["youtube_url"])
+        os.remove(orig_tracks_csv)
+        combined_df.to_csv(orig_tracks_csv, index=False)
+    else:
+        pd.DataFrame(new_tracks_info).to_csv(orig_tracks_csv, index=False)
+
 
 class TrackContainer(abc.ABC):
     """
@@ -11,6 +52,10 @@ class TrackContainer(abc.ABC):
     @staticmethod
     @abc.abstractmethod
     def from_spotify():
+        pass
+
+    @abc.abstractmethod
+    def to_list():
         pass
 
     @abc.abstractmethod
@@ -64,6 +109,16 @@ class Track(TrackContainer):
             audio_path=None
         )
 
+    def to_list(self):
+        return [{
+            "youtube_url": f"https://www.youtube.com/watch?v={self.video_id}",
+            "title": self.name,
+            "artist": self.artist_name,
+            "artwork_url": self.image_url,
+            "filename": format_for_zip(self.audio_path),
+            "duration_s": None
+        }]
+
     def __getitem__(self, key):
         return getattr(self, key)
 
@@ -106,6 +161,12 @@ class Album(TrackContainer):
             album.tracks[track_id] = Track.from_spotify(track_id, track, album)
         return album
 
+    def to_list(self):
+        output_list = []
+        for track in self.tracks.values():
+            output_list.extend(track.to_list())
+        return output_list
+
     def __getitem__(self, key):
         return getattr(self, key)
 
@@ -135,6 +196,12 @@ class Playlist(TrackContainer):
             playlist.tracks[track_id] = Track.from_spotify(track_id, track)
         return playlist
 
+    def to_list(self):
+        output_list = []
+        for track in self.tracks.values():
+            output_list.extend(track.to_list())
+        return output_list
+
     def __getitem__(self, key):
         return getattr(self, key)
 
@@ -153,6 +220,12 @@ class Artist(TrackContainer):
     @staticmethod
     def from_spotify():
         raise NotImplementedError("use `SpotifyInterface.retrieve_artist(artist_id)` to retrieve artist tracks")
+
+    def to_list(self):
+        output_list = []
+        for album in self.albums.values():
+            output_list.extend(album.to_list())
+        return output_list
 
     def __getitem__(self, key):
         return getattr(self, key)

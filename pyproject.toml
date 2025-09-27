@@ -2,11 +2,13 @@
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+py-modules = []
+
 [project]
 name = "musicdl"
 version = "2025.7"
 description = "download tracks, albums, playlists, and artist discographies"
-license = {file = "LICENSE"}
 readme = "README.md"
 
 dependencies = [ 
@@ -18,6 +20,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "spotipy>=2.25.1",
     "urllib3>=2.5.0",
+    "tqdm==4.67.1",
     "platformdirs"
 ]
 

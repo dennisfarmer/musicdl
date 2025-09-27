@@ -4,7 +4,7 @@ import os
 
 import pandas as pd
 
-from .containers import Track, Playlist, Album, Artist, TrackContainer
+from .containers import Track, Playlist, Album, Artist, TrackContainer, format_for_zip
 from .config import config
 
 
@@ -105,7 +105,7 @@ class MusicDB:
         self.cursor.executescript(sql_script)
     
     def reset_database(self):
-        # todo: also delete mp3 files and track info csv
+        # todo: also delete wav files and track info csv
         if os.path.exists(self.music_db):
             os.remove(self.music_db)
         self.connect_to_database()
@@ -114,59 +114,79 @@ class MusicDB:
         self.conn.close()
 
     def to_csv(self) -> str|list[str]:
-        csv_storage = config["csv_storage"]
-        single_file = config["single_file"]
-        col_names = ["tracks", "artists", "albums", "audio_files"]
+        csv_storage = config["datadir"]
+        #single_file = config["single_file"]
+        #col_names = ["tracks", "artists", "albums", "audio_files"]
         #for file in os.listdir(csv_storage):
-        for col in col_names:
-            file = os.path.join(csv_storage, f"{col}.csv")
-            if os.path.exists(file): os.remove(file)
-        if single_file:
-            query = """
-            SELECT
-                t.id AS track_id,
-                t.name AS track_name,
-                t.artist_id AS artist_id,
-                ar.name AS artist_name,
-                t.album_id AS album_id,
-                al.name AS album_name,
-                al.release_date AS release_date,
-                al.artwork_url AS artwork_url,
-                af.video_id AS youtube_url,
-                af.audio_path AS audio_path
-            FROM tracks t
-            LEFT JOIN artists ar ON t.artist_id = ar.id
-            LEFT JOIN albums al ON t.album_id = al.id
-            LEFT JOIN audio_files af ON t.id = af.track_id;
-            """
+        #for col in col_names:
+            #file = os.path.join(csv_storage, f"{col}.csv")
+            #if os.path.exists(file): os.remove(file)
+        output_csv = os.path.join(csv_storage, "tracks.csv")
+        if os.path.exists(output_csv):
+            os.remove(output_csv)
+        query = """
+        SELECT
+            t.id AS track_id,
+            t.name AS track_name,
+            t.artist_id AS artist_id,
+            ar.name AS artist_name,
+            t.album_id AS album_id,
+            al.name AS album_name,
+            al.release_date AS release_date,
+            al.artwork_url AS artwork_url,
+            af.video_id AS youtube_url,
+            af.audio_path AS audio_path
+        FROM tracks t
+        LEFT JOIN artists ar ON t.artist_id = ar.id
+        LEFT JOIN albums al ON t.album_id = al.id
+        LEFT JOIN audio_files af ON t.id = af.track_id;
+        """
 
-            def format_for_zip(filepath: str):
-                filepath = os.path.abspath(filepath)
-                parts = filepath.split(os.sep)
-                if "mp3s" in parts:
-                    mp3s_index = parts.index("mp3s")
-                    # Reconstruct the path as ./mp3s/SONG.mp3
-                    return os.path.join(".", *parts[mp3s_index:],)
-                else:
-                    return os.path.join("./mp3s", os.path.basename(filepath))
+        df = pd.read_sql_query(query, self.conn)
+        df["audio_path"] = df["audio_path"].apply(format_for_zip)
 
+        # use full url for simplicity during later processing
+        df["youtube_url"] = df["youtube_url"].apply(lambda v_id: f"https://www.youtube.com/watch?v={v_id}")
 
-            df = pd.read_sql_query(query, self.conn)
-            df["audio_path"] = df["audio_path"].apply(format_for_zip)
-
-            # use full url for simplicity during later processing
-            df["youtube_url"] = df["youtube_url"].apply(lambda v_id: f"https://www.youtube.com/watch?v={v_id}")
-
-            output_csv = os.path.join(csv_storage, "tracks.csv")
-            df.to_csv(output_csv, index=False)
-            return output_csv
+        df.to_csv(output_csv, index=False)
+        return output_csv
 
 
-        else:
-            queries = {t: f"SELECT * from {t}" for t in col_names}
-            output_csvs = []
-            for t, q in queries.items():
-                output_csv = os.path.join(csv_storage, f"{t}_table.csv")
-                pd.read_sql_query(q, self.conn).to_csv(output_csv, index=False)
-                output_csvs.append(output_csv)
-            return output_csvs
+        #else:
+            #queries = {t: f"SELECT * from {t}" for t in col_names}
+            #output_csvs = []
+            #for t, q in queries.items():
+                #output_csv = os.path.join(csv_storage, f"{t}_table.csv")
+                #pd.read_sql_query(q, self.conn).to_csv(output_csv, index=False)
+                #output_csvs.append(output_csv)
+            #return output_csvs
+    
+    def update_from_csv(self, csv="./tracks/tracks.csv"):
+        """
+        loads tracks folder from given csv
+
+        note: audio_path needs to be updated, I don't use this function
+              but if I do make sure to fix (likely need to move files)
+        """
+        col_names = [
+            "track_id", "track_name", "artist_id", "artist_name",
+            "album_id", "album_name", "release_date", "image_url",
+            "video_id", "audio_path"
+        ]
+        df = pd.read_csv(csv, names=col_names, header=0)
+        for _, row in df.iterrows():
+            track = Track(
+                track_id=row["track_id"],
+                name=row["track_name"],
+                artist_id=row["artist_id"],
+                artist_name=row["artist_name"],
+                album_id=row["album_id"],
+                album_name=row["album_name"],
+                image_url=row["image_url"],
+                release_date=row["release_date"],
+                video_id=row["video_id"],
+                audio_path=row["audio_path"]
+            )
+
+
+            self._insert_track(track)
