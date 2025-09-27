@@ -41,7 +41,7 @@ def ytdlp_wrapper(url: str, download_path: str):
     """
     `download_path: ./tracks/audios/song.wav`
 
-    Download mp3 or wav from `url` to `download_path`
+    Download mp3, wav, or flac from `url` to `download_path`
     """
     root, extension = os.path.splitext(download_path)
     extension = extension.lstrip(".")
@@ -81,7 +81,7 @@ class YoutubeDownloader:
     ```
     ydl = YoutubeDownloader(
             audio_directory = "./tracks" # where to save audio to
-            audio_format = "wav"         # mp3 or wav
+            audio_format = "wav"         # mp3, wav, or flac
             )
 
     tracks_info = ydl.download([
@@ -101,7 +101,7 @@ class YoutubeDownloader:
     ydl.set_audio_format("mp3")
     ```
     """
-    def __init__(self, audio_directory=".", audio_format="wav", use_ytdlp_cli=False):
+    def __init__(self, audio_directory=".", audio_format="flac", use_ytdlp_cli=False):
         self.audio_format = ""
         self.audio_directory = ""
         self.set_audio_format(audio_format)
@@ -110,8 +110,8 @@ class YoutubeDownloader:
 
     def set_audio_format(self, audio_format: str):
         audio_format = audio_format.lower().lstrip(".")
-        if audio_format not in ["mp3", "wav"]:
-            raise ValueError(f"Must use either 'mp3' or 'wav' (recieved {audio_format})")
+        if audio_format not in ["mp3", "wav", "flac"]:
+            raise ValueError(f"Must use either 'mp3', 'wav', or 'flac' (recieved {audio_format})")
         self.audio_format=audio_format
 
     def set_audio_directory(self, audio_directory: str):
@@ -303,8 +303,8 @@ class SPTrackDownloader:
 
     def set_audio_format(self, audio_format: str):
         audio_format = audio_format.lower().lstrip(".")
-        if audio_format not in ["mp3", "wav"]:
-            raise ValueError(f"Must use either 'mp3' or 'wav' (recieved {audio_format})")
+        if audio_format not in ["mp3", "wav", "flac"]:
+            raise ValueError(f"Must use either 'mp3', 'wav', or 'flac' (recieved {audio_format})")
         self.audio_format=audio_format
 
     def add_audio(self, tc: TrackContainer, force_replace_existing_download=False, verbose=False) -> TrackContainer|None:

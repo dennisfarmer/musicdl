@@ -1,4 +1,4 @@
-from musicdl.cli import main
+from musicdl.mdl import main
 
 if __name__ == "__main__":
     print("running from __main__")

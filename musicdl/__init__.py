@@ -1,2 +1,2 @@
-from . import sp, yt, db, containers, cli, dataloader
-from .cli import MusicDownloader
+from . import mdl, sp, yt, db, containers, dataloader
+from .mdl import MusicDownloader

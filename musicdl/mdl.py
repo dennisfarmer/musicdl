@@ -21,17 +21,16 @@ class MusicDownloader:
     track_url = "https://open.spotify.com/track/7AzlLxHn24DxjgQX73F9fU"
     track = mdl.download(track_url)
     ```
-    `use_db = True`: optionally save all information in `music.db` using SQLite if `use_db` is True, for keeping a structured database of songs.
+    `use_db = True`: optionally save all information in `music.db` using SQLite if `use_db` is True, for keeping a 
+    structured internal database of songs for musicdl use. (different from db used for Shazam)
     
     `use_ytdlp_cli = False`: (default) use Python version of yt-dlp, with static version of ffmpeg installed via pip 
 
     `use_ytdlp_cli = True`: Optional download yt-dlp from github, seems less prone to 403 Forbidden errors (installs to user cache)
     """
-    def __init__(self, audio_directory = None, audio_format = None, use_db = False, use_ytdlp_cli = False):
+    def __init__(self, audio_directory = None, audio_format = "flac", use_db = False, use_ytdlp_cli = False):
         if audio_directory is None:
             audio_directory = config["datadir"]
-        if audio_format is None:
-            audio_format = "wav"
         self.audio_directory = audio_directory
         self.audio_format = audio_format
         self.use_db = use_db

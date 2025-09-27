@@ -52,11 +52,17 @@ def extract_zip(zip_file: str = "./tracks.zip", audio_directory: str = "./tracks
 
     orig_csv = pathlib.Path(audio_directory)/"tracks.csv"
     orig_df = pd.read_csv(orig_csv)
-    zip_df = pd.read_csv(tmp_dir/"tracks.csv")
+    zip_csv = tmp_dir/"tracks.csv"
+    zip_df = pd.read_csv(zip_csv)
     combined_df = pd.concat([orig_df, zip_df], ignore_index=True)
     combined_df = combined_df.drop_duplicates(subset=["youtube_url"])
     os.remove(orig_csv)
-    combined_df.to_csv(orig_csv)
+    combined_df.to_csv(orig_csv, index=False)
+    os.remove(zip_csv)
+    try:
+        os.rmdir(tmp_dir)
+    except:
+        pass
 
 def create_zip(zip_file: str = "./tracks.zip", audio_directory: str = "./tracks"):
     """

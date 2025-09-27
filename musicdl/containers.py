@@ -115,8 +115,8 @@ class Track(TrackContainer):
             "title": self.name,
             "artist": self.artist_name,
             "artwork_url": self.image_url,
-            "filename": format_for_zip(self.audio_path),
-            "duration_s": None
+            "audio_path": format_for_zip(self.audio_path)
+            #"duration_s": None
         }]
 
     def __getitem__(self, key):
