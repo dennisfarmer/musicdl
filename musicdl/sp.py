@@ -27,6 +27,11 @@ class SpotifyInterface:
     """
     #def __init__(self, cursor: Cursor):
     def __init__(self):
+        self.initialized = False
+        self._sp = None
+
+
+    def initialize(self):
         client_id=config["client_id"],
         client_secret=config["client_secret"]
         if client_id is None or client_secret is None or client_id == "" or client_secret == "":
@@ -47,7 +52,6 @@ class SpotifyInterface:
                 client_secret=config["client_secret"]
                 )
             )
-
 
     def parse_url(self, url) -> tuple[str, str]:
         """
@@ -70,6 +74,8 @@ class SpotifyInterface:
         raise ValueError(f"Invalid URL: {url}")
 
     def retrieve_track_container(self, url) -> TrackContainer:
+        if not self.initialized:
+            self.initialize()
         tc_id, tc_type = self.parse_url(url)
         if tc_type == "track":
             return self.retrieve_track(tc_id)
