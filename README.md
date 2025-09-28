@@ -34,8 +34,8 @@ from musicdl.dataloader import create_zip, extract_zip, load
 
 mdl = MusicDownloader()
 tracks_info = mdl.download([
-                "https://www.youtube.com/watch?v=_r-nPqWGG6c"
-                "https://open.spotify.com/album/0ESBFn4IKNcvgD53QJPlpD?si=PNFoDMvHTi6IaT6ia-s1Jw"
+                "https://www.youtube.com/watch?v=_r-nPqWGG6c",
+                "https://open.spotify.com/album/0ESBFn4IKNcvgD53QJPlpD?si=PNFoDMvHTi6IaT6ia-s1Jw",
                 "https://www.youtube.com/watch?v=37zCgCdV468"
                 ])
 
