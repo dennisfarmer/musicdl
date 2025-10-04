@@ -38,7 +38,7 @@ class MusicDownloader:
         self.sp = SpotifyInterface()
         self.yt_cli = SPTrackDownloader(
             self.db.conn.cursor() if self.db is not None else None, 
-            audio_format=audio_format, ytdlp_version="cli" if use_ytdlp_cli else "py")
+            audio_format=audio_format, ytdlp_version="cli" if use_ytdlp_cli else "py", audio_directory=audio_directory)
         self.yt = YoutubeDownloader(audio_directory=audio_directory, audio_format=audio_format, 
                                     use_ytdlp_cli=use_ytdlp_cli)
 

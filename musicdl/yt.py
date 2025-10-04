@@ -173,7 +173,7 @@ class YoutubeDownloader:
 # download tracks based on their Spotify metadata obtained via API
 ####################################################################
 
-def retrieve_db_audio(cursor: Cursor = None, track_id: str = "0") -> tuple[str, str] | tuple[None, None]:
+def retrieve_db_audio(cursor: 'Cursor' = None, track_id: str = "0") -> tuple[str, str] | tuple[None, None]:
     if cursor is None: 
         return None, None
     cursor.execute("SELECT video_id, audio_path FROM audio_files WHERE track_id = ?", (track_id,))
@@ -288,7 +288,7 @@ class SPTrackDownloader:
     track.audio_path
     ```
     """
-    def __init__(self, cursor: Cursor = None, audio_format: str = "wav", ytdlp_version: str = "py"):
+    def __init__(self, cursor: 'Cursor' = None, audio_format: str = "wav", ytdlp_version: str = "py", audio_directory: str = "./tracks"):
         """
         ytdlp_version: either 'py' or 'cli'
                 - py uses the yt-dlp python package, with static version of ffmpeg
@@ -298,6 +298,7 @@ class SPTrackDownloader:
         self.audio_format = ""
         self.set_audio_format(audio_format)
         self.ytdlp = ytdlp_wrapper if ytdlp_version == "py" else ytdlpcli_wrapper
+        self.audio_directory = audio_directory
 
 
     def set_audio_format(self, audio_format: str):
@@ -421,9 +422,11 @@ class SPTrackDownloader:
         url = f"https://www.youtube.com/watch?v={video_id}"
 
         if config["hash_audio_storage"]:
-            output_dir = os.path.join(config["audio_storage"], SPTrackDownloader._hash_id(video_id))
+            #output_dir = os.path.join(config["audio_storage"], SPTrackDownloader._hash_id(video_id))
+            output_dir = os.path.join(self.audio_directory, SPTrackDownloader._hash_id(video_id))
         else:
-            output_dir = config["audio_storage"]
+            #output_dir = config["audio_storage"]
+            output_dir = self.audio_directory
         os.makedirs(output_dir, exist_ok=True)
 
         audio_path = os.path.join(output_dir, f"{''.join(c for c in artist_name if c.isalnum())}_{''.join(c for c in track_name if c.isalnum())}_{video_id}.{self.audio_format}")
