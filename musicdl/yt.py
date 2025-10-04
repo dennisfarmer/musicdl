@@ -298,7 +298,7 @@ class SPTrackDownloader:
         self.audio_format = ""
         self.set_audio_format(audio_format)
         self.ytdlp = ytdlp_wrapper if ytdlp_version == "py" else ytdlpcli_wrapper
-        self.audio_directory = audio_directory
+        self.audio_directory = os.path.join(audio_directory, "audio")
 
 
     def set_audio_format(self, audio_format: str):
