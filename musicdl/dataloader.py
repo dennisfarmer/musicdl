@@ -9,10 +9,10 @@ import pandas as pd
 # tracks.zip:
 # │
 # ├── audio
-# │   ├── song_1.wav
-# │   ├── song_2.wav
+# │   ├── song_1.flac
+# │   ├── song_2.flac
 # │   ├── ...
-# │   └── song_n.wav
+# │   └── song_n.flac
 # └── tracks.csv
 
 # tracks.csv:
@@ -20,12 +20,10 @@ import pandas as pd
 #    title
 #    artist
 #    artwork_url
-#    filename
+#    audio_path
 #    duration_s
 
 # filepaths are relative to where the tracks.csv file is located
-
-
 
 def extract_zip(zip_file: str = "./tracks.zip", audio_directory: str = "./tracks"):
     """
@@ -51,8 +49,12 @@ def extract_zip(zip_file: str = "./tracks.zip", audio_directory: str = "./tracks
                 zip_ref.extract(file, audio_directory)
 
     orig_csv = pathlib.Path(audio_directory)/"tracks.csv"
-    orig_df = pd.read_csv(orig_csv)
     zip_csv = tmp_dir/"tracks.csv"
+    if not os.path.exists(orig_csv):
+        shutil.move(zip_csv, orig_csv)
+        os.rmdir(tmp_dir)
+        return
+    orig_df = pd.read_csv(orig_csv)
     zip_df = pd.read_csv(zip_csv)
     combined_df = pd.concat([orig_df, zip_df], ignore_index=True)
     combined_df = combined_df.drop_duplicates(subset=["youtube_url"])
